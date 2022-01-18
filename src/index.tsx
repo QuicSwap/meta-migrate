@@ -2,12 +2,11 @@ import React from "react"
 import ReactDOM from "react-dom"
 import "./index.css"
 import reportWebVitals from "./reportWebVitals"
-
-import Timeline from "./components/timeline"
+import App from "./App"
 
 ReactDOM.render(
     <React.StrictMode>
-        <Timeline />
+        <App />
     </React.StrictMode>,
     document.getElementById("root")
 )
