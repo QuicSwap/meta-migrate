@@ -5,42 +5,54 @@ import TimelineSeparator from "@mui/lab/TimelineSeparator"
 import TimelineConnector from "@mui/lab/TimelineConnector"
 import TimelineContent from "@mui/lab/TimelineContent"
 import TimelineDot from "@mui/lab/TimelineDot"
+import { getPage, jumpTo } from "../utils/navigation"
+
+function getColor(page: number): "grey" | "primary" | "success" {
+    const currentPage = getPage()
+
+    if (currentPage === page) return "primary"
+
+    return "grey"
+}
 
 export default function TimelineComponent() {
     return (
-        <Timeline 
+        <Timeline
             sx={{
                 alignItems: "end",
-                "& > .MuiTimelineItem-root::before" : {
-                    flex: 0
+                "& > .MuiTimelineItem-root::before": {
+                    flex: 0,
+                },
+                "& > *": {
+                    cursor: "pointer"
                 }
             }}
             position="left"
         >
-            <TimelineItem>
+            <TimelineItem onClick={() => jumpTo(0)}>
                 <TimelineSeparator>
-                    <TimelineDot color="primary"/>
+                    <TimelineDot color={getColor(0)} />
                     <TimelineConnector />
                 </TimelineSeparator>
                 <TimelineContent>Remove LP</TimelineContent>
             </TimelineItem>
-            <TimelineItem>
+            <TimelineItem onClick={() => jumpTo(1)}>
                 <TimelineSeparator>
-                    <TimelineDot />
+                    <TimelineDot color={getColor(1)} />
                     <TimelineConnector />
                 </TimelineSeparator>
                 <TimelineContent>Convert</TimelineContent>
             </TimelineItem>
-            <TimelineItem>
+            <TimelineItem onClick={() => jumpTo(2)}>
                 <TimelineSeparator>
-                    <TimelineDot />
+                    <TimelineDot color={getColor(2)} />
                     <TimelineConnector />
                 </TimelineSeparator>
                 <TimelineContent>Deposit</TimelineContent>
             </TimelineItem>
-            <TimelineItem>
+            <TimelineItem onClick={() => jumpTo(3)}>
                 <TimelineSeparator>
-                    <TimelineDot />
+                    <TimelineDot color={getColor(3)} />
                 </TimelineSeparator>
                 <TimelineContent>Done</TimelineContent>
             </TimelineItem>

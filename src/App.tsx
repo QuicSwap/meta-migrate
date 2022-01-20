@@ -1,8 +1,9 @@
-import CssBaseline from "@mui/material/CssBaseline";
+import CssBaseline from "@mui/material/CssBaseline"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import TimelineComponent from "./components/timeline"
 import PaperComponent from "./components/paper"
-import { Grid } from "@mui/material";
+import { Grid } from "@mui/material"
+import { useReducer } from "react"
 
 declare module "@mui/material/styles/createPalette" {
     interface Palette {
@@ -12,6 +13,12 @@ declare module "@mui/material/styles/createPalette" {
         type?: string
     }
 }
+
+declare global {
+    interface Window {
+      FORCEUPDATE: any;
+    }
+  }
 
 const theme = createTheme({
     palette: {
@@ -48,6 +55,11 @@ const theme = createTheme({
 })
 
 export default function App() {
+
+    const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+    window.FORCEUPDATE = forceUpdate;
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
@@ -55,31 +67,29 @@ export default function App() {
                 container
                 sx={{
                     width: 1,
-                    height: 1,
+                    height: 1
                 }}
                 direction="row"
                 justifyContent="center"
                 alignItems="center"
+                wrap="nowrap"
             >
-                <Grid 
-                    item
-                    xs={2}
-                >
+                <Grid item xs={2}>
                     <TimelineComponent />
                 </Grid>
                 <Grid
-                    item 
-                    xs={6}
+                    item
                     sx={{
-                        height: 0.5
+                        height: 0.5,
+                        minHeight: "400px",
+                        flexBasis: "800px",
+                        flexShrink: 0,
+                        width: 0.5
                     }}
                 >
                     <PaperComponent />
                 </Grid>
-                <Grid 
-                    item
-                    xs={2}
-                />
+                <Grid item xs={2} />
             </Grid>
         </ThemeProvider>
     )
