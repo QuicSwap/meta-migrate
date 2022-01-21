@@ -23,7 +23,11 @@ const view_storage: string[] = ['storage_balance_bounds', 'storage_balance_of'];
 const change_storage: string[] = ['storage_deposit'];
 const view_ft: string[] = ['ft_balance_of'];
 const change_ft: string[] = ['ft_transfer_call','ft_transfer'];
-const FARM_STORAGE_BALANCE = nearAPI.utils.format.parseNearAmount('0.045');
+
+const OLD_POOL_ID = 47;
+const FARM_STORAGE_BALANCE: string = <string> nearAPI.utils.format.parseNearAmount('0.045');
+const MIN_DEPOSIT_PER_TOKEN : string = <string> nearAPI.utils.format.parseNearAmount('0.005');
+const ONE_MORE_DEPOSIT_AMOUNT: string = <string> nearAPI.utils.format.parseNearAmount('0.01');
 
 window.nearConfig = getConfig(window.NEAR_ENV || "development");
 
@@ -61,7 +65,7 @@ async function initContracts() {
     window.account,
     window.nearConfig.ADDRESS_REF_EXCHANGE,
     {
-      viewMethods: view_storage.concat(['get_pool_shares', 'get_pool_total_shares', 'get_deposits']),
+      viewMethods: view_storage.concat(['get_pool_shares', 'get_pool_total_shares', 'get_deposits', 'get_pool']),
       changeMethods: change_storage.concat(['add_liquidity', 'remove_liquidity', 'mft_register', 'mft_transfer_call'])
     }
   );
@@ -136,11 +140,22 @@ function signedInFlow() {
 }
 */
 
-// unstake LP shares from farm
-async function unstake() {
+// get user stake in OCT<>wNEAR farm
+async function getOldFarmingStake(): Promise<string> {
+  const seeds: any = await window.account.viewFunction(
+    window.contract_ref_farming.contractId,
+    'list_user_seeds',
+    {
+      account_id: window.account.accountId
+    }
+  );
+  return seeds["v2.ref-finance.near@47"] ? seeds["v2.ref-finance.near@47"] : "0";
+}
+// unstake farm shares from OCT<>wNEAR farm
+async function unstake(): Promise<void> {
   const actions: nearAPI.transactions.Action[] = [];
   // query user storage
-  const { total, available } = await window.account.viewFunction(
+  const storage_balance: any = await window.account.viewFunction(
     window.contract_ref_farming.contractId,
     'storage_balance_of',
     {
@@ -148,7 +163,7 @@ async function unstake() {
     }
   );
 
-  if (BigInt(available) <= BigInt("0")) {
+  if (storage_balance === null || BigInt(storage_balance.available) <= BigInt("0")) {
     actions.push(
       nearAPI.transactions.functionCall(
         "storage_deposit", // contract method to deposit NEAR for wNEAR
@@ -170,7 +185,7 @@ async function unstake() {
         msg: "",
       },
       200_000_000_000_000,
-      "1", // one yocto
+      "1" // one yocto
     )
   );
 
@@ -185,15 +200,89 @@ async function unstake() {
 
 }
 
-async function getOldFarmingStake() {
-  const seeds: any = await window.account.viewFunction(
-    window.contract_ref_farming.contractId,
-    'list_user_seeds',
+// get user LP shares in OCT<>wNEAR pool
+// IMPORTANT: after calling this function disable the associated button.
+// REASON: consider following scenario:
+// 1- UI makes request to refresh min_amount_out
+// 2- before response arrives, user clicks button and thinks old values will apply
+// 3- new values arrive
+// 4- wallet re-direct arrives
+// => user will approve new values thinking he'll get the old values
+async function getOldPoolInfo(): Promise<{
+  user_shares: string;
+  total_shares: string;
+  min_amounts: string[];
+}> {
+  // get use shares
+  const user_shares: string = await window.account.viewFunction(
+    window.contract_ref_exchange.contractId,
+    'get_pool_shares',
     {
+      pool_id: OLD_POOL_ID,
       account_id: window.account.accountId
     }
   );
-  return seeds["v2.ref-finance.near@47"] ? seeds["v2.ref-finance.near@47"] : "0";
+
+  // get pool info
+  const { amounts, total_shares }: {
+    amounts: string[];
+    total_shares: string;
+  } = await window.account.viewFunction(
+    window.contract_ref_exchange.contractId,
+    'get_pool',
+    {
+      pool_id: OLD_POOL_ID
+    }
+  );
+
+  // calculate min amounts
+  const min_amounts = amounts.map(amount => {
+    let exact_amount =  BigInt(amount) * (BigInt(user_shares) / BigInt(total_shares));
+    // add 0.01% slippage tolerance
+    return (exact_amount * BigInt("999") / BigInt("1000")).toString();
+  });
+
+  return {user_shares, total_shares, min_amounts};
+}
+
+// remove liquidity from OCT<>wNEAR pool
+async function removeLiquidity(): Promise<void> {
+  const actions: nearAPI.transactions.Action[] = [];
+
+  // query user storage
+  const storage_balance: any = await window.account.viewFunction(
+    window.contract_ref_exchange.contractId,
+    'storage_balance_of',
+    {
+      accountId: window.account.accountId
+    }
+  );
+
+  if ((storage_balance === null) || (BigInt(storage_balance.available) <= BigInt(MIN_DEPOSIT_PER_TOKEN))) {
+    actions.push(
+      nearAPI.transactions.functionCall(
+        "storage_deposit", // contract method to deposit NEAR for wNEAR
+        {},
+        20_000_000_000_000, // attached gas
+        ONE_MORE_DEPOSIT_AMOUNT // amount of NEAR to deposit and wrap
+      )
+    )
+  }
+
+  const { user_shares, total_shares, min_amounts } = await getOldPoolInfo();
+
+  actions.push(
+    nearAPI.transactions.functionCall(
+      'remove_liquidity',
+      {
+        pool_id: OLD_POOL_ID,
+        shares: user_shares,
+        min_amounts: min_amounts,
+      },
+      50_000_000_000_000,
+      '1' // one yocto
+    )
+  );
 }
 
 async function makeTransaction(
