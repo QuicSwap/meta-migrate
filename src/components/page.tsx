@@ -1,6 +1,7 @@
 import { Grid, Paper } from "@mui/material"
 import * as React from "react"
 import { ReactNode } from "react"
+import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
 import StepComponent from "./step"
 import TitleComponent from "./title"
@@ -14,18 +15,47 @@ function getContent(page: number): ReactNode | null {
                     <StepComponent
                         title="Remove liquidity from farm"
                         description="Remove liquidity from Ref-finance's OCT <-> wNEAR farm."
-                        active={true}
+                        completed={
+                            window.REFRESHER[0] ??
+                            (() => {
+                                window.REFRESHER[0] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(
+                                                () => resolve(false),
+                                                1000
+                                            )
+                                        )
+                                )
+                                return window.REFRESHER[0]
+                            })()
+                        }
                         // action={}
                     />
                     <StepComponent
                         title="Remove liquidity from pool"
                         description="Remove liquidity from Ref-finance's OCT <-> wNEAR pool."
-                        active={true}
+                        completed={
+                            window.REFRESHER[1] ??
+                            (() => {
+                                window.REFRESHER[1] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(
+                                                () => resolve(false),
+                                                5000
+                                            )
+                                        ),
+                                    10000
+                                )
+                                return window.REFRESHER[1]
+                            })()
+                        }
                         // action={}
                     />
                     <NavButtonComponent next />
                 </>
-            );
+            )
 
         case 1:
             return (
@@ -34,12 +64,23 @@ function getContent(page: number): ReactNode | null {
                     <StepComponent
                         title="wNEAR -> stNEAR"
                         description="Convert wNEAR to NEAR to stNEAR"
-                        active={true}
+                        completed={
+                            window.REFRESHER[2] ??
+                            (() => {
+                                window.REFRESHER[2] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(() => resolve(false), 10)
+                                        )
+                                )
+                                return window.REFRESHER[2]
+                            })()
+                        }
                         // action={}
                     />
                     <NavButtonComponent next back />
                 </>
-            );
+            )
 
         case 2:
             return (
@@ -48,32 +89,65 @@ function getContent(page: number): ReactNode | null {
                     <StepComponent
                         title="Add liquidity to pool"
                         description="Deposit liquidity at OCT <-> stNEAR pool"
-                        active={true}
+                        completed={
+                            window.REFRESHER[3] ??
+                            (() => {
+                                window.REFRESHER[3] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(() => resolve(false), 10)
+                                        )
+                                )
+                                return window.REFRESHER[3]
+                            })()
+                        }
                         // action={}
                     />
                     <StepComponent
                         title="Add liquidity to farm"
                         description="Deposit liquidity at OCT <-> stNEAR farm"
-                        active={true}
+                        completed={
+                            window.REFRESHER[4] ??
+                            (() => {
+                                window.REFRESHER[4] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(() => resolve(false), 10)
+                                        )
+                                )
+                                return window.REFRESHER[4]
+                            })()
+                        }
                         // action={}
                     />
                     <NavButtonComponent next back />
                 </>
-            );
+            )
 
         case 3:
             return (
                 <>
                     <TitleComponent title="DONE!1!1111!!" />
                 </>
-            );
+            )
 
         default:
             return (
                 <StepComponent
                     title="Something went wrong"
                     description="Try to clear site data"
-                    active={true}
+                    completed={
+                        window.REFRESHER[5] ??
+                        (() => {
+                            window.REFRESHER[5] = new Refresh(
+                                () =>
+                                    new Promise(resolve =>
+                                        setTimeout(() => resolve(false), 10)
+                                    )
+                            )
+                            return window.REFRESHER[5]
+                        })()
+                    }
                     // action={}
                 />
             )

@@ -21,7 +21,7 @@ export default function TimelineComponent() {
             sx={{
                 alignItems: "end",
                 "& > .MuiTimelineItem-root::before": {
-                    flex: 0,
+                    flex: 0
                 },
                 "& > *": {
                     cursor: "pointer"

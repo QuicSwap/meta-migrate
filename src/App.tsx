@@ -4,6 +4,8 @@ import TimelineComponent from "./components/timeline"
 import PaperComponent from "./components/paper"
 import { Grid } from "@mui/material"
 import { useReducer } from "react"
+import { Refresh } from "./utils/refresh"
+import WalletComponent from "./components/wallet"
 
 declare module "@mui/material/styles/createPalette" {
     interface Palette {
@@ -16,9 +18,10 @@ declare module "@mui/material/styles/createPalette" {
 
 declare global {
     interface Window {
-      FORCEUPDATE: any;
+        FORCEUPDATE: any
+        REFRESHER: Refresh[]
     }
-  }
+}
 
 const theme = createTheme({
     palette: {
@@ -55,10 +58,9 @@ const theme = createTheme({
 })
 
 export default function App() {
+    const [, forceUpdate] = useReducer(x => x + 1, 0)
 
-    const [, forceUpdate] = useReducer(x => x + 1, 0);
-
-    window.FORCEUPDATE = forceUpdate;
+    window.FORCEUPDATE = forceUpdate
 
     return (
         <ThemeProvider theme={theme}>
@@ -75,6 +77,7 @@ export default function App() {
                 wrap="nowrap"
             >
                 <Grid item xs={2}>
+                    <WalletComponent />
                     <TimelineComponent />
                 </Grid>
                 <Grid
