@@ -16,6 +16,7 @@ declare global {
         contract_ref_farming: nearAPI.Contract
         nearConfig: any
         nearInitPromise: any
+        oldFarmingStake: string
     }
 }
 
@@ -362,4 +363,4 @@ async function makeTransaction(
 
 // Loads nearAPI and this contract into window scope.
 
-export { initContracts }
+export { initContracts, getOldFarmingStake }

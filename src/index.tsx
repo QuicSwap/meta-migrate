@@ -3,6 +3,8 @@ import ReactDOM from "react-dom"
 import "./index.css"
 import reportWebVitals from "./reportWebVitals"
 import App from "./App"
+import * as buffer from "buffer"
+;(window as any).Buffer = buffer.Buffer // https://github.com/isaacs/core-util-is/issues/27#issuecomment-878969583
 
 ReactDOM.render(
     <React.StrictMode>

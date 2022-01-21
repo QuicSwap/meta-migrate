@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Button, Icon } from "@mui/material"
-import { initContracts } from "../services/near"
 
 function signIn() {
     window.walletAccount.requestSignIn()
@@ -12,16 +11,16 @@ function signOut() {
 }
 
 export default function WalletComponent() {
-    if (window.walletAccount === undefined) {
-        window.nearInitPromise = initContracts().then(window.FORCEUPDATE);
-        return <></>;
-    }
+    if (window.walletAccount === undefined) return <></>
 
     return (
         <Button
+            variant="outlined"
             sx={{
-                position: "relative",
-                right: 0
+                mr: 5,
+                mb: 2,
+                px: 2,
+                borderRadius: "100px"
             }}
             onClick={() => {
                 window.walletAccount.isSignedIn() ? signOut() : signIn()
@@ -29,7 +28,7 @@ export default function WalletComponent() {
             startIcon={<Icon>account_balance_wallet</Icon>}
         >
             {window.walletAccount.isSignedIn()
-                ? `Logout ${window.walletAccount.getAccountId()}`
+                ? `${window.walletAccount.getAccountId()}`
                 : `Sign In`}
         </Button>
     )

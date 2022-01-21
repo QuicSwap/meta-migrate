@@ -5,16 +5,23 @@ import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
 import StepComponent from "./step"
 import TitleComponent from "./title"
+import { getOldFarmingStake } from "../services/near"
 
 function getContent(page: number): ReactNode | null {
+    getOldFarmingStake()
+        .then(res => (window.oldFarmingStake = res))
+        .then(window.FORCEUPDATE)
+
     switch (page) {
         case 0:
             return (
                 <>
-                    <TitleComponent title="Remove Liquidity" />
+                    <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
-                        title="Remove liquidity from farm"
-                        description="Remove liquidity from Ref-finance's OCT <-> wNEAR farm."
+                        title="Unstake from OCT <-> wNEAR farm"
+                        description={`You currently have ${
+                            window.oldFarmingStake ?? "..."
+                        } staked shares`}
                         completed={
                             window.REFRESHER[0] ??
                             (() => {

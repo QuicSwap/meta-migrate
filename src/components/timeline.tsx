@@ -34,27 +34,27 @@ export default function TimelineComponent() {
                     <TimelineDot color={getColor(0)} />
                     <TimelineConnector />
                 </TimelineSeparator>
-                <TimelineContent>Remove LP</TimelineContent>
+                <TimelineContent>OLD POSITION</TimelineContent>
             </TimelineItem>
             <TimelineItem onClick={() => jumpTo(1)}>
                 <TimelineSeparator>
                     <TimelineDot color={getColor(1)} />
                     <TimelineConnector />
                 </TimelineSeparator>
-                <TimelineContent>Convert</TimelineContent>
+                <TimelineContent>CONVERT</TimelineContent>
             </TimelineItem>
             <TimelineItem onClick={() => jumpTo(2)}>
                 <TimelineSeparator>
                     <TimelineDot color={getColor(2)} />
                     <TimelineConnector />
                 </TimelineSeparator>
-                <TimelineContent>Deposit</TimelineContent>
+                <TimelineContent>NEW POSITION</TimelineContent>
             </TimelineItem>
             <TimelineItem onClick={() => jumpTo(3)}>
                 <TimelineSeparator>
                     <TimelineDot color={getColor(3)} />
                 </TimelineSeparator>
-                <TimelineContent>Done</TimelineContent>
+                <TimelineContent>DONE</TimelineContent>
             </TimelineItem>
         </Timeline>
     )
