@@ -1,16 +1,14 @@
-import { Grid, Paper } from "@mui/material"
+import { Grid } from "@mui/material"
 import * as React from "react"
 import { ReactNode } from "react"
+import { getOldFarmingStake, getOldPoolInfo, removeLiquidity, unstake } from "../services/near"
 import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
 import StepComponent from "./step"
 import TitleComponent from "./title"
-import { getOldFarmingStake } from "../services/near"
+import { utils } from "near-api-js"
 
 function getContent(page: number): ReactNode | null {
-    getOldFarmingStake()
-        .then(res => (window.oldFarmingStake = res))
-        .then(window.FORCEUPDATE)
 
     switch (page) {
         case 0:
@@ -18,47 +16,87 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
-                        title="Unstake from OCT <-> wNEAR farm"
-                        description={`You currently have ${
-                            window.oldFarmingStake ?? "..."
-                        } staked shares`}
+                        title="1. Unstake from OCT <-> wNEAR farm"
+                        description={`You have #${
+                            window.oldFarmingStake
+                                ? parseFloat(
+                                        utils.format.formatNearAmount(
+                                            window.oldFarmingStake
+                                        )!
+                                  ).toFixed(3)
+                                : "..."
+                        }# staked shares.`}
                         completed={
                             window.REFRESHER[0] ??
                             (() => {
                                 window.REFRESHER[0] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            setTimeout(
-                                                () => resolve(false),
-                                                1000
-                                            )
-                                        )
+                                            getOldFarmingStake()
+                                                .then(res => window.oldFarmingStake = res)
+                                                .then(res =>
+                                                    resolve(
+                                                        BigInt(res) === BigInt("0")
+                                                    )
+                                                )
+                                        ),
+                                    0
                                 )
                                 return window.REFRESHER[0]
                             })()
                         }
-                        // action={}
+                        action={() => unstake(window.oldFarmingStake)}
                     />
                     <StepComponent
-                        title="Remove liquidity from pool"
-                        description="Remove liquidity from Ref-finance's OCT <-> wNEAR pool."
+                        title="2. Remove liquidity from OCT <-> wNEAR pool"
+                        description={`You have #${
+                            window.oldPoolInfo
+                                ? parseFloat(
+                                        utils.format.formatNearAmount(
+                                            window.oldPoolInfo.user_shares
+                                        )!
+                                  ).toFixed(3)
+                                : "..."
+                        }# LP shares equal to #${
+                            window.oldPoolInfo
+                                ? parseFloat(
+                                        utils.format.formatNearAmount(
+                                            window.oldPoolInfo.min_amounts[0] + "000000"
+                                        )!
+                                  ).toFixed(3)
+                                : "..."
+                        }# $OCT and #${
+                            window.oldPoolInfo
+                                ? parseFloat(
+                                        utils.format.formatNearAmount(
+                                            window.oldPoolInfo.min_amounts[1]
+                                        )!
+                                  ).toFixed(3)
+                                : "..."
+                        }# $wNEAR.`}
                         completed={
                             window.REFRESHER[1] ??
                             (() => {
                                 window.REFRESHER[1] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            setTimeout(
-                                                () => resolve(false),
-                                                5000
-                                            )
-                                        ),
-                                    10000
+                                            getOldPoolInfo()
+                                                .then(res => window.oldPoolInfo = res)
+                                                .then(res =>
+                                                    resolve(
+                                                        BigInt(res.user_shares) === BigInt("0")
+                                                    )
+                                                )
+                                        )
                                 )
                                 return window.REFRESHER[1]
                             })()
                         }
-                        // action={}
+                        action={() => removeLiquidity(
+                            window.oldPoolInfo.user_shares, 
+                            window.oldPoolInfo.total_shares, 
+                            window.oldPoolInfo.min_amounts
+                        )}
                     />
                     <NavButtonComponent next />
                 </>

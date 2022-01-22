@@ -5,11 +5,12 @@ class Refresh {
 
     constructor(query: () => Promise<boolean>, interval: number = 15000) {
         if (interval !== 0) {
-            query()
-                .then(res => (this.active = res))
+            window.nearInitPromise
+                .then(query)
+                .then((res: boolean) => (this.active = res))
                 .then(window.FORCEUPDATE)
             setInterval(() => this.poll(query), interval)
-        } else this.poll(query)
+        } else window.nearInitPromise.then(() => this.poll(query))
     }
 
     private poll(query: () => Promise<boolean>): void {

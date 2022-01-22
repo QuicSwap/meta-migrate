@@ -17,6 +17,11 @@ declare global {
         nearConfig: any
         nearInitPromise: any
         oldFarmingStake: string
+        oldPoolInfo: {
+            user_shares: string
+            total_shares: string
+            min_amounts: string[]
+        }
     }
 }
 
@@ -186,14 +191,14 @@ async function getOldFarmingStake(): Promise<string> {
         : "0"
 }
 // unstake farm shares from OCT<>wNEAR farm
-async function unstake(): Promise<void> {
+async function unstake(amnt: string): Promise<void> {
     const actions: nearAPI.transactions.Action[] = []
     // query user storage
     const storage_balance: any = await window.account.viewFunction(
         window.contract_ref_farming.contractId,
         "storage_balance_of",
         {
-            accountId: window.account.accountId
+            account_id: window.account.accountId
         }
     )
 
@@ -211,13 +216,11 @@ async function unstake(): Promise<void> {
         )
     }
 
-    const amnt = await getOldFarmingStake()
-
     actions.push(
         nearAPI.transactions.functionCall(
             "withdraw_seed",
             {
-                seed_id: 7,
+                seed_id: "v2.ref-finance.near@47",
                 amount: amnt,
                 msg: ""
             },
@@ -262,10 +265,10 @@ async function getOldPoolInfo(): Promise<{
     // get pool info
     const {
         amounts,
-        total_shares
+        shares_total_supply: total_shares
     }: {
         amounts: string[]
-        total_shares: string
+        shares_total_supply: string
     } = await window.account.viewFunction(
         window.contract_ref_exchange.contractId,
         "get_pool",
@@ -277,7 +280,7 @@ async function getOldPoolInfo(): Promise<{
     // calculate min amounts
     const min_amounts = amounts.map(amount => {
         let exact_amount =
-            BigInt(amount) * (BigInt(user_shares) / BigInt(total_shares))
+            BigInt(amount) * BigInt(user_shares) / BigInt(total_shares)
         // add 0.01% slippage tolerance
         return ((exact_amount * BigInt("999")) / BigInt("1000")).toString()
     })
@@ -286,7 +289,7 @@ async function getOldPoolInfo(): Promise<{
 }
 
 // remove liquidity from OCT<>wNEAR pool
-async function removeLiquidity(): Promise<void> {
+async function removeLiquidity(user_shares: string, total_share: string, min_amounts: string[]): Promise<void> {
     const actions: nearAPI.transactions.Action[] = []
 
     // query user storage
@@ -294,7 +297,7 @@ async function removeLiquidity(): Promise<void> {
         window.contract_ref_exchange.contractId,
         "storage_balance_of",
         {
-            accountId: window.account.accountId
+            account_id: window.account.accountId
         }
     )
 
@@ -312,8 +315,6 @@ async function removeLiquidity(): Promise<void> {
         )
     }
 
-    const { user_shares, total_shares, min_amounts } = await getOldPoolInfo()
-
     actions.push(
         nearAPI.transactions.functionCall(
             "remove_liquidity",
@@ -326,6 +327,15 @@ async function removeLiquidity(): Promise<void> {
             "1" // one yocto
         )
     )
+
+    const TX: nearAPI.transactions.Transaction = await makeTransaction(
+        window.contract_ref_exchange.contractId,
+        actions
+      )
+  
+    window.walletAccount.requestSignTransactions({
+        transactions: [TX]
+    })
 }
 
 async function makeTransaction(
@@ -363,4 +373,4 @@ async function makeTransaction(
 
 // Loads nearAPI and this contract into window scope.
 
-export { initContracts, getOldFarmingStake }
+export { initContracts, getOldFarmingStake, unstake, getOldPoolInfo, removeLiquidity }

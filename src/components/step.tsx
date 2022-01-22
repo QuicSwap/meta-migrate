@@ -14,7 +14,7 @@ export default function StepComponent(props: {
     description: string
     completed: Refresh
     hide?: Refresh
-    action?: Call
+    action?: () => void
 }) {
     const completed = props.completed.getResult()
     const hide = props?.hide?.getResult() ?? false
@@ -38,7 +38,18 @@ export default function StepComponent(props: {
             <Grid item xs={8}>
                 <b>{props.title}</b>
                 <br />
-                {props.description}
+                {props.description.split("#").map((t, i) => (
+                    <span
+                        style={
+                            i % 2 === 1
+                                ? { color: "#8542eb", fontWeight: "bold" }
+                                : {}
+                        }
+                        key={i}
+                    >
+                        {t}
+                    </span>
+                ))}
             </Grid>
             <Grid item>
                 <Button
@@ -47,6 +58,7 @@ export default function StepComponent(props: {
                         borderRadius: "100px"
                     }}
                     disabled={completed !== false}
+                    onClick={props?.action}
                 >
                     {getState(completed)}
                 </Button>
