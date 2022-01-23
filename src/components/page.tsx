@@ -2,12 +2,15 @@ import { Grid, InputAdornment, TextField } from "@mui/material"
 import { useTheme } from "@mui/styles"
 import { utils } from "near-api-js"
 import * as React from "react"
-import { ReactNode } from "react"
+import { ReactNode, useReducer } from "react"
 import {
+    getMetapoolInfo,
     getOldFarmingStake,
     getOldPoolInfo,
+    getWnearBalanceOnRef,
     removeLiquidity,
-    unstake
+    unstake,
+    wnearToStnear
 } from "../services/near"
 import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
@@ -22,7 +25,7 @@ const Description = (props: { children: any }) => (
             display: "flex",
             flexFlow: "row wrap",
             alignItems: "baseline",
-            whiteSpace: "pre"
+            whiteSpace: "break-spaces"
         }}
     >
         {props.children}
@@ -45,25 +48,46 @@ const Purple = (props: { children: any }) => {
     )
 }
 
-const Input = (props: { id: number; label: string; unit?: string; type?: string; default: string }) => (
-    <TextField
-        sx={{
-            mx: 1,
-            flex: 2,
-            flexBasis: 0
-        }}
-        label={props.label}
-        variant="outlined"
-        margin="normal"
-        size="small"
-        type={props.type}
-        InputProps={ props.unit === undefined ? {} : {
-            endAdornment: <InputAdornment position="end">{props.unit}</InputAdornment>
-        }}
-        defaultValue={props.default}
-        onChange={e => (inputValues[props.id] = e.target.value)}
-    />
-)
+const Input = (props: {
+    id: number
+    label: string
+    unit?: string
+    type?: string
+    default: string
+}) => {
+    inputValues[props.id] = props.default
+    return (
+        <TextField
+            sx={{
+                mx: 1,
+                flex: 2,
+                flexBasis: 0
+            }}
+            label={props.label}
+            variant="outlined"
+            margin="normal"
+            size="small"
+            type={props.type}
+            InputProps={
+                props.unit === undefined
+                    ? {}
+                    : {
+                          endAdornment: (
+                              <InputAdornment position="end">
+                                  {props.unit}
+                              </InputAdornment>
+                          )
+                      }
+            }
+            defaultValue={props.default}
+            onChange={e => {
+                if (e.target.value === "") inputValues[props.id] = "0"
+                else inputValues[props.id] = e.target.value
+                updatePage()
+            }}
+        />
+    )
+}
 
 function getContent(page: number): ReactNode | null {
     switch (page) {
@@ -183,15 +207,20 @@ function getContent(page: number): ReactNode | null {
                             })()
                         }
                         action={() => {
-                                localStorage.setItem("OCTminAmountOut", window.oldPoolInfo.min_amounts[0]);
-                                localStorage.setItem("wNEARminAmountOut", window.oldPoolInfo.min_amounts[1]);
-                                removeLiquidity(
-                                    window.oldPoolInfo.user_shares,
-                                    window.oldPoolInfo.total_shares,
-                                    window.oldPoolInfo.min_amounts
-                                )
-                            }
-                        }
+                            localStorage.setItem(
+                                "OCTminAmountOut",
+                                window.oldPoolInfo.min_amounts[0]
+                            )
+                            localStorage.setItem(
+                                "wNEARminAmountOut",
+                                window.oldPoolInfo.min_amounts[1]
+                            )
+                            removeLiquidity(
+                                window.oldPoolInfo.user_shares,
+                                window.oldPoolInfo.total_shares,
+                                window.oldPoolInfo.min_amounts
+                            )
+                        }}
                     />
                     <NavButtonComponent next />
                 </>
@@ -200,49 +229,63 @@ function getContent(page: number): ReactNode | null {
         case 1:
             return (
                 <>
-                    <TitleComponent title="Convert Assets" />
+                    <TitleComponent title="wNEAR -> stNEAR" />
                     <StepComponent
-                        title="wNEAR -> NEAR"
+                        title={'Withdraw, unwrap & stake'}
                         description={
                             <Description>
-                                Withdraw and unwrap your wNEAR from Ref-finance.{" "}
+                                Withdraw your wNEAR from Ref-finance, unwrap it, and stake it with MetaPool to get stNEAR.{" "}
                                 <Break />
                                 <Input
                                     id={0}
                                     label="amount"
                                     unit="wNEAR"
                                     type="number"
-                                    default={localStorage.getItem("wNEARminAmountOut") ?? "0"}
-                                />{" "}
-                            </Description>
-                        }
-                        completed={
-                            window.REFRESHER[2] ??
-                            (() => {
-                                window.REFRESHER[2] = new Refresh(
-                                    () =>
-                                        new Promise(resolve =>
-                                            setTimeout(() => resolve(false), 10)
+                                    default={
+                                        inputValues[0] ??
+                                        utils.format.formatNearAmount(
+                                            localStorage.getItem(
+                                                "wNEARminAmountOut"
+                                            ) ?? "0"
                                         )
-                                )
-                                return window.REFRESHER[2]
-                            })()
-                        }
-                        action={() => console.log(inputValues[0])}
-                    />
-                    <StepComponent
-                        title="NEAR -> stNEAR"
-                        description={
-                            <Description>
-                                Stake your NEAR with <Purple>MetaPool</Purple> to get stNEAR
+                                    }
+                                />{" "}
+                                {'\u2248'}{" "}
+                                <span>
+                                    <Purple>
+                                        {window.stNEARPrice
+                                            ? parseFloat(
+                                                  (
+                                                      Number(
+                                                          BigInt(
+                                                              (utils.format.parseNearAmount(
+                                                                  inputValues[0]
+                                                              ) as string) +
+                                                                  "0000"
+                                                          ) /
+                                                              BigInt(
+                                                                  window.stNEARPrice
+                                                              )
+                                                      ) / 10000
+                                                  ).toString()
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>{" "}
+                                    $stNEAR.
+                                </span>
                                 <Break />
-                                <Input
-                                    id={0}
-                                    label="amount"
-                                    unit="NEAR"
-                                    type="number"
-                                    default={localStorage.getItem("wNEARminAmountOut") ?? "0"}
-                                />{" "}
+                                {window.minDepositAmount !== undefined &&
+                                BigInt(
+                                    utils.format.parseNearAmount(
+                                        inputValues[0]
+                                    ) as string
+                                ) < BigInt(window.minDepositAmount)
+                                    ? <Description>Must be more than <Purple>{parseFloat(
+                                          utils.format.formatNearAmount(
+                                              window.minDepositAmount
+                                          )
+                                      ).toFixed(3)}</Purple> $NEAR.</Description>
+                                    : ""}
                             </Description>
                         }
                         completed={
@@ -251,13 +294,37 @@ function getContent(page: number): ReactNode | null {
                                 window.REFRESHER[2] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            setTimeout(() => resolve(false), 10)
-                                        )
+                                            getWnearBalanceOnRef().then(
+                                                async res => {
+                                                    const {
+                                                        st_near_price,
+                                                        min_deposit_amount
+                                                    } = await getMetapoolInfo()
+                                                    window.stNEARPrice =
+                                                        st_near_price
+                                                    window.minDepositAmount =
+                                                        min_deposit_amount
+                                                    resolve(
+                                                        BigInt(res) <
+                                                            BigInt(
+                                                                min_deposit_amount
+                                                            )
+                                                    )
+                                                }
+                                            )
+                                        ),
+                                    0
                                 )
                                 return window.REFRESHER[2]
                             })()
                         }
-                        // action={}
+                        action={() =>
+                            wnearToStnear(
+                                utils.format.parseNearAmount(
+                                    inputValues[0]
+                                ) as string
+                            )
+                        }
                     />
                     <NavButtonComponent next back />
                 </>
@@ -335,7 +402,11 @@ function getContent(page: number): ReactNode | null {
     }
 }
 
+let updatePage: any
+
 export default function PageComponent(props: { page: number }) {
+    const [, forceUpdate] = useReducer(x => x + 1, 0)
+    updatePage = forceUpdate
     return (
         <Grid
             container
