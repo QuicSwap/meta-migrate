@@ -1,15 +1,71 @@
-import { Grid } from "@mui/material"
+import { Grid, InputAdornment, TextField } from "@mui/material"
+import { useTheme } from "@mui/styles"
+import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode } from "react"
-import { getOldFarmingStake, getOldPoolInfo, removeLiquidity, unstake } from "../services/near"
+import {
+    getOldFarmingStake,
+    getOldPoolInfo,
+    removeLiquidity,
+    unstake
+} from "../services/near"
 import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
 import StepComponent from "./step"
 import TitleComponent from "./title"
-import { utils } from "near-api-js"
+
+const inputValues: string[] = []
+
+const Description = (props: { children: any }) => (
+    <div
+        style={{
+            display: "flex",
+            flexFlow: "row wrap",
+            alignItems: "baseline",
+            whiteSpace: "pre"
+        }}
+    >
+        {props.children}
+    </div>
+)
+
+const Break = () => <div style={{ width: "100%" }} />
+
+const Purple = (props: { children: any }) => {
+    const theme = useTheme() as any
+    return (
+        <span
+            style={{
+                color: theme.palette.primary.main,
+                fontWeight: "bold"
+            }}
+        >
+            {props.children}
+        </span>
+    )
+}
+
+const Input = (props: { id: number; label: string; unit?: string; type?: string; default: string }) => (
+    <TextField
+        sx={{
+            mx: 1,
+            flex: 2,
+            flexBasis: 0
+        }}
+        label={props.label}
+        variant="outlined"
+        margin="normal"
+        size="small"
+        type={props.type}
+        InputProps={ props.unit === undefined ? {} : {
+            endAdornment: <InputAdornment position="end">{props.unit}</InputAdornment>
+        }}
+        defaultValue={props.default}
+        onChange={e => (inputValues[props.id] = e.target.value)}
+    />
+)
 
 function getContent(page: number): ReactNode | null {
-
     switch (page) {
         case 0:
             return (
@@ -17,15 +73,21 @@ function getContent(page: number): ReactNode | null {
                     <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
                         title="1. Unstake from OCT <-> wNEAR farm"
-                        description={`You have #${
-                            window.oldFarmingStake
-                                ? parseFloat(
-                                        utils.format.formatNearAmount(
-                                            window.oldFarmingStake
-                                        )!
-                                  ).toFixed(3)
-                                : "..."
-                        }# staked shares.`}
+                        description={
+                            <Description>
+                                You have{" "}
+                                <Purple>
+                                    {window.oldFarmingStake
+                                        ? parseFloat(
+                                              utils.format.formatNearAmount(
+                                                  window.oldFarmingStake
+                                              )!
+                                          ).toFixed(3)
+                                        : "..."}
+                                </Purple>{" "}
+                                staked shares.
+                            </Description>
+                        }
                         completed={
                             window.REFRESHER[0] ??
                             (() => {
@@ -33,10 +95,15 @@ function getContent(page: number): ReactNode | null {
                                     () =>
                                         new Promise(resolve =>
                                             getOldFarmingStake()
-                                                .then(res => window.oldFarmingStake = res)
+                                                .then(
+                                                    res =>
+                                                        (window.oldFarmingStake =
+                                                            res)
+                                                )
                                                 .then(res =>
                                                     resolve(
-                                                        BigInt(res) === BigInt("0")
+                                                        BigInt(res) ===
+                                                            BigInt("0")
                                                     )
                                                 )
                                         ),
@@ -49,31 +116,48 @@ function getContent(page: number): ReactNode | null {
                     />
                     <StepComponent
                         title="2. Remove liquidity from OCT <-> wNEAR pool"
-                        description={`You have #${
-                            window.oldPoolInfo
-                                ? parseFloat(
-                                        utils.format.formatNearAmount(
-                                            window.oldPoolInfo.user_shares
-                                        )!
-                                  ).toFixed(3)
-                                : "..."
-                        }# LP shares equal to #${
-                            window.oldPoolInfo
-                                ? parseFloat(
-                                        utils.format.formatNearAmount(
-                                            window.oldPoolInfo.min_amounts[0] + "000000"
-                                        )!
-                                  ).toFixed(3)
-                                : "..."
-                        }# $OCT and #${
-                            window.oldPoolInfo
-                                ? parseFloat(
-                                        utils.format.formatNearAmount(
-                                            window.oldPoolInfo.min_amounts[1]
-                                        )!
-                                  ).toFixed(3)
-                                : "..."
-                        }# $wNEAR.`}
+                        description={
+                            <Description>
+                                You have{" "}
+                                <Purple>
+                                    {window.oldPoolInfo
+                                        ? parseFloat(
+                                              utils.format.formatNearAmount(
+                                                  window.oldPoolInfo.user_shares
+                                              )!
+                                          ).toFixed(3)
+                                        : "..."}
+                                </Purple>{" "}
+                                LP shares equal to{" "}
+                                <span>
+                                    <Purple>
+                                        {window.oldPoolInfo
+                                            ? parseFloat(
+                                                  utils.format.formatNearAmount(
+                                                      window.oldPoolInfo
+                                                          .min_amounts[0] +
+                                                          "000000"
+                                                  )!
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    &nbsp; $OCT and{" "}
+                                </span>
+                                <span>
+                                    <Purple>
+                                        {window.oldPoolInfo
+                                            ? parseFloat(
+                                                  utils.format.formatNearAmount(
+                                                      window.oldPoolInfo
+                                                          .min_amounts[1]
+                                                  )!
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>{" "}
+                                    $wNEAR.
+                                </span>
+                            </Description>
+                        }
                         completed={
                             window.REFRESHER[1] ??
                             (() => {
@@ -81,10 +165,16 @@ function getContent(page: number): ReactNode | null {
                                     () =>
                                         new Promise(resolve =>
                                             getOldPoolInfo()
-                                                .then(res => window.oldPoolInfo = res)
+                                                .then(
+                                                    res =>
+                                                        (window.oldPoolInfo =
+                                                            res)
+                                                )
                                                 .then(res =>
                                                     resolve(
-                                                        BigInt(res.user_shares) === BigInt("0")
+                                                        BigInt(
+                                                            res.user_shares
+                                                        ) === BigInt("0")
                                                     )
                                                 )
                                         )
@@ -92,11 +182,16 @@ function getContent(page: number): ReactNode | null {
                                 return window.REFRESHER[1]
                             })()
                         }
-                        action={() => removeLiquidity(
-                            window.oldPoolInfo.user_shares, 
-                            window.oldPoolInfo.total_shares, 
-                            window.oldPoolInfo.min_amounts
-                        )}
+                        action={() => {
+                                localStorage.setItem("OCTminAmountOut", window.oldPoolInfo.min_amounts[0]);
+                                localStorage.setItem("wNEARminAmountOut", window.oldPoolInfo.min_amounts[1]);
+                                removeLiquidity(
+                                    window.oldPoolInfo.user_shares,
+                                    window.oldPoolInfo.total_shares,
+                                    window.oldPoolInfo.min_amounts
+                                )
+                            }
+                        }
                     />
                     <NavButtonComponent next />
                 </>
@@ -107,8 +202,49 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="Convert Assets" />
                     <StepComponent
-                        title="wNEAR -> stNEAR"
-                        description="Convert wNEAR to NEAR to stNEAR"
+                        title="wNEAR -> NEAR"
+                        description={
+                            <Description>
+                                Withdraw and unwrap your wNEAR from Ref-finance.{" "}
+                                <Break />
+                                <Input
+                                    id={0}
+                                    label="amount"
+                                    unit="wNEAR"
+                                    type="number"
+                                    default={localStorage.getItem("wNEARminAmountOut") ?? "0"}
+                                />{" "}
+                            </Description>
+                        }
+                        completed={
+                            window.REFRESHER[2] ??
+                            (() => {
+                                window.REFRESHER[2] = new Refresh(
+                                    () =>
+                                        new Promise(resolve =>
+                                            setTimeout(() => resolve(false), 10)
+                                        )
+                                )
+                                return window.REFRESHER[2]
+                            })()
+                        }
+                        action={() => console.log(inputValues[0])}
+                    />
+                    <StepComponent
+                        title="NEAR -> stNEAR"
+                        description={
+                            <Description>
+                                Stake your NEAR with <Purple>MetaPool</Purple> to get stNEAR
+                                <Break />
+                                <Input
+                                    id={0}
+                                    label="amount"
+                                    unit="NEAR"
+                                    type="number"
+                                    default={localStorage.getItem("wNEARminAmountOut") ?? "0"}
+                                />{" "}
+                            </Description>
+                        }
                         completed={
                             window.REFRESHER[2] ??
                             (() => {

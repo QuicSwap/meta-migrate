@@ -11,7 +11,7 @@ function getState(completed: boolean | null) {
 
 export default function StepComponent(props: {
     title: string
-    description: string
+    description: any
     completed: Refresh
     hide?: Refresh
     action?: () => void
@@ -38,18 +38,7 @@ export default function StepComponent(props: {
             <Grid item xs={8}>
                 <b>{props.title}</b>
                 <br />
-                {props.description.split("#").map((t, i) => (
-                    <span
-                        style={
-                            i % 2 === 1
-                                ? { color: "#8542eb", fontWeight: "bold" }
-                                : {}
-                        }
-                        key={i}
-                    >
-                        {t}
-                    </span>
-                ))}
+                {props.description}
             </Grid>
             <Grid item>
                 <Button
