@@ -41,11 +41,11 @@ const setInputErrors = (
     pattern?: string,
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
 ) =>
-    inputErrors[id] =
+    (inputErrors[id] =
         (pattern !== undefined &&
             inputValuesUnmatched[id].match(pattern) === null) ||
         (assert !== undefined &&
-            assert.some(a => a.test(inputValuesUnmatched[id])))
+            assert.some(a => a.test(inputValuesUnmatched[id]))))
 
 const Description = (props: { children: any }) => (
     <div
@@ -131,7 +131,7 @@ const Input = (props: {
                               a.test(inputValuesUnmatched[props.id])
                           )
                           .map(a => a.msg)
-                          .reduce((a, b) => a + "\n" +  b)
+                          .reduce((a, b) => a + "\n" + b)
                     : ""
             }
             onChange={e => {
@@ -153,7 +153,7 @@ function getContent(page: number): ReactNode | null {
                         title="1. Unstake from OCT <-> wNEAR farm"
                         description={
                             <Description>
-                                You have{" "}
+                                You have {""}
                                 <Purple>
                                     {window.oldFarmingStake
                                         ? parseFloat(
@@ -162,8 +162,8 @@ function getContent(page: number): ReactNode | null {
                                               )!
                                           ).toFixed(3)
                                         : "..."}
-                                </Purple>{" "}
-                                staked shares.
+                                </Purple>
+                                {""} staked shares.
                             </Description>
                         }
                         completed={
@@ -196,7 +196,7 @@ function getContent(page: number): ReactNode | null {
                         title="2. Remove liquidity from OCT <-> wNEAR pool"
                         description={
                             <Description>
-                                You have{" "}
+                                You have {""}
                                 <Purple>
                                     {window.oldPoolInfo
                                         ? parseFloat(
@@ -205,8 +205,8 @@ function getContent(page: number): ReactNode | null {
                                               )!
                                           ).toFixed(3)
                                         : "..."}
-                                </Purple>{" "}
-                                LP shares equal to{" "}
+                                </Purple>
+                                {""} LP shares equal to {""}
                                 <span>
                                     <Purple>
                                         {window.oldPoolInfo
@@ -219,7 +219,7 @@ function getContent(page: number): ReactNode | null {
                                               ).toFixed(3)
                                             : "..."}
                                     </Purple>
-                                    &nbsp; $OCT and{" "}
+                                    {""} $OCT and {""}
                                 </span>
                                 <span>
                                     <Purple>
@@ -231,8 +231,8 @@ function getContent(page: number): ReactNode | null {
                                                   )!
                                               ).toFixed(3)
                                             : "..."}
-                                    </Purple>{" "}
-                                    $wNEAR.
+                                    </Purple>
+                                    {""} $wNEAR.
                                 </span>
                             </Description>
                         }
@@ -289,19 +289,22 @@ function getContent(page: number): ReactNode | null {
                         description={
                             <Description>
                                 Withdraw your wNEAR from Ref-finance, unwrap it,
-                                and stake it with MetaPool to get stNEAR.{" "}
+                                and stake it with MetaPool to get stNEAR.
                                 <Break />
-                                You currently have <span>
+                                You currently have {""}
+                                <span>
                                     <Purple>
                                         {window.wNEARBalanceOnRef
                                             ? parseFloat(
-                                                utils.format.formatNearAmount(
-                                                    window.wNEARBalanceOnRef
-                                                  ).toString()
+                                                  utils.format
+                                                      .formatNearAmount(
+                                                          window.wNEARBalanceOnRef
+                                                      )
+                                                      .toString()
                                               ).toFixed(3)
                                             : "..."}
-                                    </Purple>{" "}
-                                    $wNEAR on Ref-finance.
+                                    </Purple>
+                                    {""} $wNEAR on Ref-finance.
                                 </span>
                                 <Break />
                                 <Input
@@ -356,8 +359,8 @@ function getContent(page: number): ReactNode | null {
                                             ) ?? "0"
                                         )
                                     }
-                                />{" "}
-                                {"\u2248"}{" "}
+                                />
+                                {""} {"\u2248"} {""}
                                 <span>
                                     <Purple>
                                         {window.stNEARPrice
@@ -377,8 +380,8 @@ function getContent(page: number): ReactNode | null {
                                                   ).toString()
                                               ).toFixed(3)
                                             : "..."}
-                                    </Purple>{" "}
-                                    $stNEAR.
+                                    </Purple>
+                                    {""} $stNEAR.
                                 </span>
                                 <Break />
                             </Description>
