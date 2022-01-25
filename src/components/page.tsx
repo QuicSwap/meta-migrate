@@ -41,15 +41,11 @@ const setInputErrors = (
     pattern?: string,
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
 ) =>
-    inputErrors[id] = (
-        pattern !== undefined &&
-        inputValuesUnmatched[id].match(pattern) === null
-    ) || (
-        assert !== undefined &&
-        assert.some(a =>
-            a.test(inputValuesUnmatched[id])
-        )
-    )
+    inputErrors[id] =
+        (pattern !== undefined &&
+            inputValuesUnmatched[id].match(pattern) === null) ||
+        (assert !== undefined &&
+            assert.some(a => a.test(inputValuesUnmatched[id])))
 
 const Description = (props: { children: any }) => (
     <div
@@ -90,6 +86,7 @@ const Input = (props: {
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
 }) => {
     setInputValues(props.id, props.default)
+    setInputErrors(props.id, props.pattern, props.assert)
     return (
         <TextField
             sx={{
@@ -134,7 +131,7 @@ const Input = (props: {
                               a.test(inputValuesUnmatched[props.id])
                           )
                           .map(a => a.msg)
-                          .reduce((a, b) => a + b)
+                          .reduce((a, b) => a + "\n" +  b)
                     : ""
             }
             onChange={e => {
@@ -294,6 +291,19 @@ function getContent(page: number): ReactNode | null {
                                 Withdraw your wNEAR from Ref-finance, unwrap it,
                                 and stake it with MetaPool to get stNEAR.{" "}
                                 <Break />
+                                You currently have <span>
+                                    <Purple>
+                                        {window.wNEARBalanceOnRef
+                                            ? parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    window.wNEARBalanceOnRef
+                                                  ).toString()
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>{" "}
+                                    $wNEAR on Ref-finance.
+                                </span>
+                                <Break />
                                 <Input
                                     id={0}
                                     label="amount"
@@ -318,6 +328,24 @@ function getContent(page: number): ReactNode | null {
                                                     window.minDepositAmount
                                                 )
                                             ).toFixed(3)} wNEAR.`
+                                        },
+                                        {
+                                            test: (value: string) =>
+                                                window.wNEARBalanceOnRef !==
+                                                    undefined &&
+                                                BigInt(
+                                                    utils.format.parseNearAmount(
+                                                        value
+                                                    ) ?? "0"
+                                                ) >
+                                                    BigInt(
+                                                        window.wNEARBalanceOnRef
+                                                    ),
+                                            msg: `Insufficient funds. You only have ${parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    window.wNEARBalanceOnRef
+                                                )
+                                            ).toFixed(3)} wNEAR on Ref-finance.`
                                         }
                                     ]}
                                     default={
@@ -363,14 +391,22 @@ function getContent(page: number): ReactNode | null {
                                         new Promise(resolve =>
                                             getWnearBalanceOnRef().then(
                                                 async res => {
-                                                    const {
-                                                        st_near_price,
-                                                        min_deposit_amount
-                                                    } = await getMetapoolInfo()
+                                                    const [
+                                                        {
+                                                            st_near_price,
+                                                            min_deposit_amount
+                                                        },
+                                                        w_near_balance_on_ref
+                                                    ] = await Promise.all([
+                                                        getMetapoolInfo(),
+                                                        getWnearBalanceOnRef()
+                                                    ])
                                                     window.stNEARPrice =
                                                         st_near_price
                                                     window.minDepositAmount =
                                                         min_deposit_amount
+                                                    window.wNEARBalanceOnRef =
+                                                        w_near_balance_on_ref
                                                     resolve(
                                                         BigInt(res) <
                                                             BigInt(

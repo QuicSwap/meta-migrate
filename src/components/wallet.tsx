@@ -20,7 +20,8 @@ export default function WalletComponent() {
                 mr: 5,
                 mb: 2,
                 px: 2,
-                borderRadius: "100px"
+                borderRadius: "100px",
+                textTransform: "lowercase"
             }}
             onClick={() => {
                 window.walletAccount.isSignedIn() ? signOut() : signIn()

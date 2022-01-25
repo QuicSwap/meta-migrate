@@ -24,6 +24,7 @@ declare global {
         }
         stNEARPrice: string
         minDepositAmount: string
+        wNEARBalanceOnRef: string
     }
 }
 

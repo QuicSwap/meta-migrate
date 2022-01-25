@@ -4,7 +4,7 @@ import { Call } from "../utils/call"
 import { Refresh } from "../utils/refresh"
 
 function getState(completed: boolean | null, denied?: boolean) {
-    if (completed === true) return <Icon>done</Icon> 
+    if (completed === true) return <Icon>done</Icon>
     else if (denied !== undefined && denied) return <Icon>block</Icon>
     else if (completed === false) return "RUN"
     else return "..."
@@ -48,7 +48,7 @@ export default function StepComponent(props: {
                     sx={{
                         borderRadius: "100px"
                     }}
-                    disabled={completed !== false}
+                    disabled={completed !== false || props.denied}
                     onClick={props?.action}
                 >
                     {getState(completed, props.denied)}
