@@ -18,6 +18,38 @@ import StepComponent from "./step"
 import TitleComponent from "./title"
 
 const inputValues: string[] = []
+const inputValuesUnmatched: string[] = []
+const inputErrors: boolean[] = []
+
+const setInputValues = (
+    id: number,
+    val: string,
+    pattern?: string,
+    fallback: string = "0"
+) => {
+    inputValuesUnmatched[id] = val
+    inputValues[id] =
+        pattern !== undefined
+            ? val.match(pattern) !== null
+                ? val
+                : fallback
+            : val
+}
+
+const setInputErrors = (
+    id: number,
+    pattern?: string,
+    assert?: Array<{ test: (value: string) => boolean; msg: string }>
+) =>
+    inputErrors[id] = (
+        pattern !== undefined &&
+        inputValuesUnmatched[id].match(pattern) === null
+    ) || (
+        assert !== undefined &&
+        assert.some(a =>
+            a.test(inputValuesUnmatched[id])
+        )
+    )
 
 const Description = (props: { children: any }) => (
     <div
@@ -54,8 +86,10 @@ const Input = (props: {
     unit?: string
     type?: string
     default: string
+    pattern?: string
+    assert?: Array<{ test: (value: string) => boolean; msg: string }>
 }) => {
-    inputValues[props.id] = props.default
+    setInputValues(props.id, props.default)
     return (
         <TextField
             sx={{
@@ -68,8 +102,8 @@ const Input = (props: {
             margin="normal"
             size="small"
             type={props.type}
-            InputProps={
-                props.unit === undefined
+            InputProps={{
+                ...(props.unit === undefined
                     ? {}
                     : {
                           endAdornment: (
@@ -77,12 +111,35 @@ const Input = (props: {
                                   {props.unit}
                               </InputAdornment>
                           )
-                      }
-            }
+                      }),
+                ...(props.pattern === undefined
+                    ? {}
+                    : {
+                          pattern: props.pattern
+                      })
+            }}
             defaultValue={props.default}
+            error={inputErrors[props.id]}
+            helperText={
+                inputErrors[props.id] &&
+                props.pattern !== undefined &&
+                inputValuesUnmatched[props.id].match(props.pattern) === null
+                    ? "Invalid input value"
+                    : props.assert !== undefined &&
+                      props.assert.some(a =>
+                          a.test(inputValuesUnmatched[props.id])
+                      )
+                    ? props
+                          .assert!.filter(a =>
+                              a.test(inputValuesUnmatched[props.id])
+                          )
+                          .map(a => a.msg)
+                          .reduce((a, b) => a + b)
+                    : ""
+            }
             onChange={e => {
-                if (e.target.value === "") inputValues[props.id] = "0"
-                else inputValues[props.id] = e.target.value
+                setInputValues(props.id, e.target.value, props.pattern)
+                setInputErrors(props.id, props.pattern, props.assert)
                 updatePage()
             }}
         />
@@ -231,18 +288,40 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="wNEAR -> stNEAR" />
                     <StepComponent
-                        title={'Withdraw, unwrap & stake'}
+                        title={"Withdraw, unwrap & stake"}
                         description={
                             <Description>
-                                Withdraw your wNEAR from Ref-finance, unwrap it, and stake it with MetaPool to get stNEAR.{" "}
+                                Withdraw your wNEAR from Ref-finance, unwrap it,
+                                and stake it with MetaPool to get stNEAR.{" "}
                                 <Break />
                                 <Input
                                     id={0}
                                     label="amount"
                                     unit="wNEAR"
                                     type="number"
+                                    pattern="^\d+(\.\d{0,24})?$"
+                                    assert={[
+                                        {
+                                            test: (value: string) =>
+                                                window.minDepositAmount !==
+                                                    undefined &&
+                                                BigInt(
+                                                    utils.format.parseNearAmount(
+                                                        value
+                                                    ) ?? "0"
+                                                ) <
+                                                    BigInt(
+                                                        window.minDepositAmount
+                                                    ),
+                                            msg: `Staking with MetaPool requires a minimum deposit of ${parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    window.minDepositAmount
+                                                )
+                                            ).toFixed(3)} wNEAR.`
+                                        }
+                                    ]}
                                     default={
-                                        inputValues[0] ??
+                                        inputValuesUnmatched[0] ??
                                         utils.format.formatNearAmount(
                                             localStorage.getItem(
                                                 "wNEARminAmountOut"
@@ -250,7 +329,7 @@ function getContent(page: number): ReactNode | null {
                                         )
                                     }
                                 />{" "}
-                                {'\u2248'}{" "}
+                                {"\u2248"}{" "}
                                 <span>
                                     <Purple>
                                         {window.stNEARPrice
@@ -274,18 +353,6 @@ function getContent(page: number): ReactNode | null {
                                     $stNEAR.
                                 </span>
                                 <Break />
-                                {window.minDepositAmount !== undefined &&
-                                BigInt(
-                                    utils.format.parseNearAmount(
-                                        inputValues[0]
-                                    ) as string
-                                ) < BigInt(window.minDepositAmount)
-                                    ? <Description>Must be more than <Purple>{parseFloat(
-                                          utils.format.formatNearAmount(
-                                              window.minDepositAmount
-                                          )
-                                      ).toFixed(3)}</Purple> $NEAR.</Description>
-                                    : ""}
                             </Description>
                         }
                         completed={
@@ -318,6 +385,7 @@ function getContent(page: number): ReactNode | null {
                                 return window.REFRESHER[2]
                             })()
                         }
+                        denied={inputErrors[0]}
                         action={() =>
                             wnearToStnear(
                                 utils.format.parseNearAmount(

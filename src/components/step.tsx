@@ -3,8 +3,9 @@ import { Grid, Button, Icon } from "@mui/material"
 import { Call } from "../utils/call"
 import { Refresh } from "../utils/refresh"
 
-function getState(completed: boolean | null) {
-    if (completed === true) return <Icon>done</Icon>
+function getState(completed: boolean | null, denied?: boolean) {
+    if (completed === true) return <Icon>done</Icon> 
+    else if (denied !== undefined && denied) return <Icon>block</Icon>
     else if (completed === false) return "RUN"
     else return "..."
 }
@@ -13,6 +14,7 @@ export default function StepComponent(props: {
     title: string
     description: any
     completed: Refresh
+    denied?: boolean
     hide?: Refresh
     action?: () => void
 }) {
@@ -49,7 +51,7 @@ export default function StepComponent(props: {
                     disabled={completed !== false}
                     onClick={props?.action}
                 >
-                    {getState(completed)}
+                    {getState(completed, props.denied)}
                 </Button>
             </Grid>
         </Grid>

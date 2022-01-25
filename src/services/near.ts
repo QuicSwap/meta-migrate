@@ -22,7 +22,7 @@ declare global {
             total_shares: string
             min_amounts: string[]
         }
-        stNEARPrice: string,
+        stNEARPrice: string
         minDepositAmount: string
     }
 }
