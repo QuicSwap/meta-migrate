@@ -1,14 +1,18 @@
-import { Grid, Icon, InputAdornment, TextField } from "@mui/material"
+import { Box, Grid, Icon, InputAdornment, TextField } from "@mui/material"
 import { useTheme } from "@mui/styles"
 import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode, useReducer } from "react"
 import {
+    addLiquidity,
     getMetapoolInfo,
     getNewFarmingStake,
     getNewPoolInfo,
+    getOctBalanceOnRef,
     getOldFarmingStake,
     getOldPoolInfo,
+    getStnearBalance,
+    getStnearBalanceOnRef,
     getWnearBalanceOnRef,
     removeLiquidity,
     stake,
@@ -19,6 +23,7 @@ import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
 import StepComponent from "./step"
 import TitleComponent from "./title"
+import meme from "../meme.png"
 
 const inputValues: string[] = []
 const inputValuesUnmatched: string[] = []
@@ -87,6 +92,7 @@ const Input = (props: {
     default: string
     pattern?: string
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
+    onChange?: (value: string) => void
 }) => {
     setInputValues(props.id, props.default)
     setInputErrors(props.id, props.pattern, props.assert)
@@ -118,7 +124,7 @@ const Input = (props: {
                           pattern: props.pattern
                       })
             }}
-            defaultValue={props.default}
+            value={inputValuesUnmatched[props.id]}
             error={inputErrors[props.id]}
             helperText={
                 inputErrors[props.id] &&
@@ -140,6 +146,7 @@ const Input = (props: {
             onChange={e => {
                 setInputValues(props.id, e.target.value, props.pattern)
                 setInputErrors(props.id, props.pattern, props.assert)
+                props?.onChange?.(e.target.value)
                 updatePage()
             }}
         />
@@ -345,7 +352,9 @@ function getContent(page: number): ReactNode | null {
                                                 utils.format.formatNearAmount(
                                                     window.wNEARBalanceOnRef
                                                 )
-                                            ).toFixed(3)} $wNEAR on Ref-finance.`
+                                            ).toFixed(
+                                                3
+                                            )} $wNEAR on Ref-finance.`
                                         }
                                     ]}
                                     default={
@@ -433,9 +442,46 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="reDeposit Funds" />
                     <StepComponent
-                        title="1. Add liquidity to pool"
+                        title="1. Add liquidity to the OCT <-> stNEAR pool."
                         description={
                             <Description>
+                                <Break />
+                                You have {""}
+                                <span>
+                                    <Purple>
+                                        {window.OCTBalanceOnRef !== undefined
+                                            ? parseFloat(
+                                                  utils.format.formatNearAmount(
+                                                      window.OCTBalanceOnRef +
+                                                          "000000"
+                                                  )
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} $OCT
+                                </span>
+                                {""} and {""}
+                                <span>
+                                    <Purple>
+                                        {window.stNEARBalance !== undefined &&
+                                        window.stNEARBalanceOnRef !== undefined
+                                            ? parseFloat(
+                                                  utils.format.formatNearAmount(
+                                                      (
+                                                          BigInt(
+                                                              window.stNEARBalance
+                                                          ) +
+                                                          BigInt(
+                                                              window.stNEARBalanceOnRef
+                                                          )
+                                                      ).toString()
+                                                  )
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} $stNEAR.
+                                </span>
+                                <Break />
                                 <Input
                                     id={1}
                                     label="amount"
@@ -453,21 +499,51 @@ function getContent(page: number): ReactNode | null {
                                                     ) ?? "0"
                                                 ) >
                                                     BigInt(
-                                                        window.OCTBalanceOnRef
+                                                        window.OCTBalanceOnRef +
+                                                            "000000"
                                                     ),
-                                            msg: `Insufficient funds. You only have ${parseFloat(
-                                                utils.format.formatNearAmount(
-                                                    window.OCTBalanceOnRef
-                                                )
-                                            ).toFixed(3)} $OCT on Ref-finance.`
+                                            msg: `Insufficient funds. You only have ${
+                                                window.OCTBalanceOnRef !==
+                                                undefined
+                                                    ? parseFloat(
+                                                          utils.format.formatNearAmount(
+                                                              window.OCTBalanceOnRef +
+                                                                  "000000"
+                                                          )
+                                                      ).toFixed(3)
+                                                    : "..."
+                                            } $OCT on Ref-finance.`
                                         }
                                     ]}
+                                    onChange={(value: string) => {
+                                        if (
+                                            window.newPoolInfo !== undefined &&
+                                            !inputErrors[1]
+                                        ) {
+                                            inputValuesUnmatched[2] = (
+                                                parseFloat(value) /
+                                                (Number(
+                                                    (BigInt("10000000000") *
+                                                        BigInt("1000000") *
+                                                        BigInt(
+                                                            window.newPoolInfo
+                                                                .amounts[1]
+                                                        )) /
+                                                        BigInt(
+                                                            window.newPoolInfo
+                                                                .amounts[0]
+                                                        )
+                                                ) /
+                                                    10000000000)
+                                            ).toString() // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
+                                        }
+                                    }}
                                     default={
                                         inputValuesUnmatched[1] ??
                                         utils.format.formatNearAmount(
                                             localStorage.getItem(
                                                 "OCTminAmountOut"
-                                            ) ?? "0"
+                                            ) + "000000" ?? "0"
                                         )
                                     }
                                 />
@@ -489,52 +565,159 @@ function getContent(page: number): ReactNode | null {
                                                     utils.format.parseNearAmount(
                                                         value
                                                     ) ?? "0"
-                                                ) > (
+                                                ) >
                                                     BigInt(
                                                         window.stNEARBalanceOnRef
-                                                    ) + BigInt(
-                                                        window.stNEARBalance
-                                                    )
-                                                ),
+                                                    ) +
+                                                        BigInt(
+                                                            window.stNEARBalance
+                                                        ),
                                             msg: `Insufficient funds. You only have ${parseFloat(
                                                 utils.format.formatNearAmount(
-                                                    (BigInt(
-                                                        window.stNEARBalanceOnRef ?? "0"
-                                                    ) + BigInt(
-                                                        window.stNEARBalance ?? "0"
-                                                    )).toString()
+                                                    (
+                                                        BigInt(
+                                                            window.stNEARBalanceOnRef ??
+                                                                "0"
+                                                        ) +
+                                                        BigInt(
+                                                            window.stNEARBalance ??
+                                                                "0"
+                                                        )
+                                                    ).toString()
                                                 )
                                             ).toFixed(3)} stNEAR in total.`
                                         }
                                     ]}
+                                    onChange={(value: string) => {
+                                        if (
+                                            window.newPoolInfo !== undefined &&
+                                            !inputErrors[2]
+                                        ) {
+                                            inputValuesUnmatched[1] = (
+                                                (parseFloat(value) *
+                                                    Number(
+                                                        (BigInt("10000000000") *
+                                                            BigInt("1000000") *
+                                                            BigInt(
+                                                                window
+                                                                    .newPoolInfo
+                                                                    .amounts[1]
+                                                            )) /
+                                                            BigInt(
+                                                                window
+                                                                    .newPoolInfo
+                                                                    .amounts[0]
+                                                            )
+                                                    )) /
+                                                10000000000
+                                            ).toString() // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
+                                        }
+                                    }}
                                     default={
-                                        inputValuesUnmatched[2] ?? "0"
+                                        inputValuesUnmatched[2] ??
+                                        (window.newPoolInfo !== undefined
+                                            ? "0"
+                                            : (() => {
+                                                  window.nearInitPromise.then(
+                                                      async () => {
+                                                          window.newPoolInfo =
+                                                              await getNewPoolInfo()
+                                                          inputValuesUnmatched[2] =
+                                                              (
+                                                                  parseFloat(
+                                                                      utils.format.formatNearAmount(
+                                                                          localStorage.getItem(
+                                                                              "OCTminAmountOut"
+                                                                          ) +
+                                                                              "000000" ??
+                                                                              "0"
+                                                                      )
+                                                                  ) /
+                                                                  (Number(
+                                                                      (BigInt(
+                                                                          "10000000000"
+                                                                      ) *
+                                                                          BigInt(
+                                                                              "1000000"
+                                                                          ) *
+                                                                          BigInt(
+                                                                              window
+                                                                                  .newPoolInfo
+                                                                                  .amounts[1]
+                                                                          )) /
+                                                                          BigInt(
+                                                                              window
+                                                                                  .newPoolInfo
+                                                                                  .amounts[0]
+                                                                          )
+                                                                  ) /
+                                                                      10000000000)
+                                                              ).toString()
+                                                          updatePage()
+                                                      }
+                                                  )
+                                                  return "0"
+                                              })())
                                     }
                                 />
                             </Description>
                         }
+                        denied={inputErrors[1] || inputErrors[2]}
                         completed={
                             window.REFRESHER[3] ??
                             (() => {
                                 window.REFRESHER[3] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getNewPoolInfo().then(res => {
+                                            getNewPoolInfo().then(async res => {
                                                 window.newPoolInfo = res
-                                                resolve(
-                                                    BigInt(res.user_shares) <=
-                                                        BigInt("1") // leave 1 LP share to occupy storage
-                                                )
+                                                const [
+                                                    OCTOnRef,
+                                                    stNEAROnRef,
+                                                    stNEAR
+                                                ] = await Promise.all([
+                                                    getOctBalanceOnRef(),
+                                                    getStnearBalanceOnRef(),
+                                                    getStnearBalance()
+                                                ])
+                                                window.OCTBalanceOnRef =
+                                                    OCTOnRef
+                                                window.stNEARBalanceOnRef =
+                                                    stNEAROnRef
+                                                window.stNEARBalance = stNEAR
+                                                resolve(false)
                                             })
                                         )
                                 )
                                 return window.REFRESHER[3]
                             })()
                         }
-                        // action={}
+                        action={() => {
+                            addLiquidity(
+                                (
+                                    BigInt(
+                                        utils.format.parseNearAmount(
+                                            inputValues[2]
+                                        )!
+                                    ) - BigInt(window.stNEARBalanceOnRef)
+                                ).toString(),
+                                [
+                                    utils.format.parseNearAmount(
+                                        inputValues[2]
+                                    )!,
+                                    (
+                                        BigInt(
+                                            utils.format.parseNearAmount(
+                                                inputValues[1]
+                                            )!
+                                        ) / BigInt("1000000")
+                                    ).toString()
+                                ]
+                            )
+                        }}
                     />
                     <StepComponent
-                        title="2. Add liquidity to farm"
+                        title="2. Stake on the OCT <-> stNEAR farm."
                         description={
                             <Description>
                                 You have {""}
@@ -554,25 +737,6 @@ function getContent(page: number): ReactNode | null {
                                     {""} LP tokens {""}
                                 </span>
                                 in the OCT {"<->"} stNEAR pool.
-                                <Break />
-                                Supply them to the OCT {"<->"} stNEAR farm to
-                                start farming.
-                                <Break />
-                                You currently have {""}
-                                <span>
-                                    <Purple>
-                                        {window.newFarmingStake
-                                            ? parseFloat(
-                                                  utils.format
-                                                      .formatNearAmount(
-                                                          window.newFarmingStake
-                                                      )
-                                                      .toString()
-                                              ).toFixed(3)
-                                            : "..."}
-                                    </Purple>
-                                    {""} LP tokens in the farm.
-                                </span>
                             </Description>
                         }
                         completed={
@@ -616,9 +780,43 @@ function getContent(page: number): ReactNode | null {
             )
 
         case 3:
+            if (window.REFRESHER[5] === undefined)
+                window.REFRESHER[5] = new Refresh(
+                    () =>
+                        new Promise(resolve =>
+                            getNewFarmingStake().then(res => {
+                                window.newFarmingStake = res
+                                resolve(true)
+                            })
+                        ),
+                    0
+                )
             return (
                 <>
-                    <TitleComponent title="DONE!1!1111!!" />
+                    <TitleComponent title="Happy Farming!" />
+                    <img src={meme} alt="meme" />
+                    <Box
+                        sx={{
+                            my: 2
+                        }}
+                    >
+                        You currently have {""}
+                        <span>
+                            <Purple>
+                                {window.newFarmingStake
+                                    ? parseFloat(
+                                          utils.format
+                                              .formatNearAmount(
+                                                  window.newFarmingStake
+                                              )
+                                              .toString()
+                                      ).toFixed(3)
+                                    : "..."}
+                            </Purple>
+                            {""} LP shares in the farm.
+                        </span>
+                    </Box>
+                    <NavButtonComponent back />
                 </>
             )
 

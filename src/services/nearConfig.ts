@@ -8,7 +8,8 @@ function getConfig(NEAR_ENV: string) {
                 ADDRESS_REF_EXCHANGE: "v2.ref-finance.near",
                 ADDRESS_REF_FARMING: "v2.ref-farming.near",
                 ADDRESS_WNEAR: "wrap.near",
-                ADDRESS_OCT: "f5cfbc74057c610c8ef151a439252680ac68c6dc.factory.bridge.near",
+                ADDRESS_OCT:
+                    "f5cfbc74057c610c8ef151a439252680ac68c6dc.factory.bridge.near",
                 nodeUrl: "https://rpc.mainnet.near.org",
                 walletUrl: "https://wallet.near.org",
                 helperUrl: "https://helper.mainnet.near.org"

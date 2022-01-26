@@ -482,7 +482,7 @@ async function getStnearBalance(): Promise<string> {
         "ft_balance_of",
         { account_id: window.account.accountId }
     )
-    return balance;
+    return balance
 }
 
 // get user stNEAR balance on Ref-finance
@@ -519,9 +519,9 @@ async function addLiquidity(
     lp_amounts: string[]
 ): Promise<void> {
     const metapoolActions: nearAPI.transactions.Action[] = []
-    // use this to increase storage balance on ref before depositing stNEAR 
+    // use this to increase storage balance on ref before depositing stNEAR
     const refActions_1: nearAPI.transactions.Action[] = []
-    // use this for actions related to LP 
+    // use this for actions related to LP
     const refActions_2: nearAPI.transactions.Action[] = []
 
     // query user storage on ref
@@ -579,24 +579,26 @@ async function addLiquidity(
             100_000_000_000_000,
             LP_STORAGE_AMOUNT
         )
-    );
+    )
 
-
-    const preTXs: any = [];
+    const preTXs: any = []
     if (refActions_1.length > 0) {
         preTXs.push(
-            makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_1)
+            makeTransaction(
+                window.nearConfig.ADDRESS_REF_EXCHANGE,
+                refActions_1
+            )
         )
     }
     if (metapoolActions.length > 0) {
         preTXs.push(
             makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
-        );
+        )
     }
     preTXs.push(
         makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_2)
-    );
-    const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs);
+    )
+    const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
 
     window.walletAccount.requestSignTransactions({
         transactions: TXs
@@ -648,6 +650,10 @@ export {
     getNewPoolInfo,
     removeLiquidity,
     getWnearBalanceOnRef,
+    getOctBalanceOnRef,
+    getStnearBalanceOnRef,
+    getStnearBalance,
     wnearToStnear,
-    getMetapoolInfo
+    getMetapoolInfo,
+    addLiquidity
 }
