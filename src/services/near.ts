@@ -42,7 +42,9 @@ const change_storage: string[] = ["storage_deposit"]
 const view_ft: string[] = ["ft_balance_of"]
 const change_ft: string[] = ["ft_transfer_call", "ft_transfer"]
 
+const ADDRESS_OCT = "f5cfbc74057c610c8ef151a439252680ac68c6dc.factory.bridge.near"
 const OLD_POOL_ID = 47
+// TODO: Pool ID of $OCT<->$stNEAR
 const NEW_POOL_ID = 1889
 const SIMPLE_POOL_SHARE_DECIMALS = 24
 const FARM_STORAGE_BALANCE: string = nearAPI.utils.format.parseNearAmount(
@@ -52,6 +54,9 @@ const MIN_DEPOSIT_PER_TOKEN: string = nearAPI.utils.format.parseNearAmount(
     "0.005"
 ) as string
 const ONE_MORE_DEPOSIT_AMOUNT: string = nearAPI.utils.format.parseNearAmount(
+    "0.01"
+) as string
+const LP_STORAGE_AMOUNT: string = nearAPI.utils.format.parseNearAmount(
     "0.01"
 ) as string
 const NEW_ACCOUNT_STORAGE_COST: string = nearAPI.utils.format.parseNearAmount(
@@ -135,66 +140,6 @@ async function initContracts() {
         }
     )
 }
-
-// Using initialized contract
-/*
-async function doWork() {
-  // Based on whether you've authorized, checking which flow we should go.
-  if (!window.walletAccount.isSignedIn()) {
-    signedOutFlow();
-  } else {
-    signedInFlow();
-  }
-}
-*/
-
-// Function that initializes the signIn button using WalletAccount
-/*
-function signedOutFlow() {
-  // Displaying the signed out flow container.
-  Array.from(document.querySelectorAll('.signed-out')).forEach(el => el.style.display = '');
-  // Adding an event to a sing-in button.
-  document.getElementById('sign-in')!.addEventListener('click', () => {
-    window.walletAccount.requestSignIn(
-      // The contract name that would be authorized to be called by the user's account.
-      window.nearConfig.contractName,
-      // This is the app name. It can be anything.
-      'Who was the last person to say "Hi!"?',
-      // We can also provide URLs to redirect on success and failure.
-      // The current URL is used by default.
-    );
-  });
-}
-*/
-
-// Main function for the signed-in flow (already authorized by the wallet).
-/*
-function signedInFlow() {
-  // Displaying the signed in flow container.
-  Array.from(document.querySelectorAll('.signed-in')).forEach(el => el.style.display = '');
-
-  // Displaying current account name.
-  document.getElementById('account-id')!.innerText = window.account.accountId;
-
-  // Adding an event to a say-hi button.
-  document.getElementById('say-hi')!.addEventListener('click', () => {
-    // We call say Hi and then update who said Hi last.
-    window.contract.sayHi().then(updateWhoSaidHi);
-  });
-
-  // Adding an event to a sing-out button.
-  document.getElementById('sign-out')!.addEventListener('click', e => {
-    e.preventDefault();
-    window.walletAccount.signOut();
-    // Forcing redirect.
-    window.location.replace(window.location.origin + window.location.pathname);
-  });
-
-  // fetch who last said hi without requiring button click
-  // but wait a second so the question is legible
-  setTimeout(updateWhoSaidHi, 1000);
-}
-*/
 
 // get user stake in OCT<>wNEAR farm
 async function getOldFarmingStake(): Promise<string> {
@@ -315,7 +260,7 @@ async function unstake(amnt: string): Promise<void> {
         nearAPI.transactions.functionCall(
             "withdraw_seed",
             {
-                seed_id: "v2.ref-finance.near@47",
+                seed_id: `v2.ref-finance.near@${OLD_POOL_ID}`,
                 amount: amnt,
                 msg: ""
             },
@@ -587,6 +532,130 @@ async function getMetapoolInfo(): Promise<{
     }
 }
 
+// get user stNEAR on metapool
+async function getStnearBalance(): Promise<string> {
+    const balance: string = await window.account.viewFunction(
+        window.contract_metapool.contractId,
+        "ft_balance_of",
+        { account_id: window.account.accountId }
+    )
+    return balance;
+}
+
+// get user stNEAR balance on Ref-finance
+async function getStnearBalanceOnRef(): Promise<string> {
+    const balance = await window.account.viewFunction(
+        window.contract_ref_exchange.contractId,
+        "get_deposits",
+        {
+            account_id: window.account.accountId
+        }
+    )
+    return balance[window.contract_metapool.contractId]
+        ? balance[window.contract_metapool.contractId]
+        : "0"
+}
+
+// get user stNEAR balance on Ref-finance
+async function getOctBalanceOnRef(): Promise<string> {
+    const balance = await window.account.viewFunction(
+        window.contract_ref_exchange.contractId,
+        "get_deposits",
+        {
+            account_id: window.account.accountId
+        }
+    )
+    return balance[ADDRESS_OCT]
+        ? balance[ADDRESS_OCT]
+        : "0"
+}
+
+// deposit stNEAR then add liquidity to OCT<>stNEAR pool
+async function addLiquidity(
+    amount_stnear: string,
+    lp_amounts: string[]
+): Promise<void> {
+    const metapoolActions: nearAPI.transactions.Action[] = []
+    // use this to increase storage balance on ref before depositing stNEAR 
+    const refActions_1: nearAPI.transactions.Action[] = []
+    // use this for actions related to LP 
+    const refActions_2: nearAPI.transactions.Action[] = []
+
+    // query user storage on ref
+    const storage_balance: any = await window.account.viewFunction(
+        window.contract_ref_exchange.contractId,
+        "storage_balance_of",
+        {
+            account_id: window.account.accountId
+        }
+    )
+
+    // check if storage is enough for a new token deposit
+    if (
+        storage_balance === null ||
+        BigInt(storage_balance.available) <= BigInt(MIN_DEPOSIT_PER_TOKEN)
+    ) {
+        refActions_1.push(
+            nearAPI.transactions.functionCall(
+                "storage_deposit", // contract method to deposit NEAR for wNEAR
+                {},
+                20_000_000_000_000, // attached gas
+                ONE_MORE_DEPOSIT_AMOUNT // amount of NEAR to deposit and wrap
+            )
+        )
+    }
+
+    // deposit stNEAR on ref-finance. Assumptions:
+    // 1- ref-finance contract already has storage deposit on stNEAR contract
+    // 2- stNEAR is on the ref-finance global token whitelist
+    metapoolActions.push(
+        nearAPI.transactions.functionCall(
+            "ft_transfer_call",
+            {
+                receiver_id: window.contract_ref_exchange.contractId,
+                amount: amount_stnear,
+                msg: ""
+            },
+            150_000_000_000_000,
+            "1" // one yocto
+        )
+    )
+
+    // add liquidity to $OCT <-> $stNEAR
+    // no need to check for storage as storage deposit
+    // is take from attached deposit for this action
+    refActions_2.push(
+        nearAPI.transactions.functionCall(
+            "add_liquidity",
+            {
+                pool_id: NEW_POOL_ID,
+                amounts: lp_amounts
+            },
+            100_000_000_000_000,
+            LP_STORAGE_AMOUNT
+        )
+    );
+
+
+    const preTXs: any = [];
+    if (refActions_1.length > 0) {
+        preTXs.push(
+            makeTransaction(window.contract_ref_exchange.contractId, refActions_1)
+        )
+    }
+    preTXs.push(
+        makeTransaction(window.contract_metapool.contractId, metapoolActions)
+    );
+    preTXs.push(
+        makeTransaction(window.contract_ref_exchange.contractId, refActions_2)
+    );
+    const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs);
+
+    window.walletAccount.requestSignTransactions({
+        transactions: TXs
+    })
+}
+
 async function makeTransaction(
     receiverId: string,
     actions: nearAPI.transactions.Action[],
@@ -619,6 +688,7 @@ async function makeTransaction(
         blockHash
     )
 }
+
 // Loads nearAPI and this contract into window scope.
 
 export {
