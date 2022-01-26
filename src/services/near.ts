@@ -551,18 +551,20 @@ async function addLiquidity(
     // deposit stNEAR on ref-finance. Assumptions:
     // 1- ref-finance contract already has storage deposit on stNEAR contract
     // 2- stNEAR is on the ref-finance global token whitelist
-    metapoolActions.push(
-        nearAPI.transactions.functionCall(
-            "ft_transfer_call",
-            {
-                receiver_id: window.nearConfig.ADDRESS_REF_EXCHANGE,
-                amount: amount_stnear,
-                msg: ""
-            },
-            150_000_000_000_000,
-            "1" // one yocto
+    if (BigInt(amount_stnear) > BigInt("0")) {
+        metapoolActions.push(
+            nearAPI.transactions.functionCall(
+                "ft_transfer_call",
+                {
+                    receiver_id: window.nearConfig.ADDRESS_REF_EXCHANGE,
+                    amount: amount_stnear,
+                    msg: ""
+                },
+                150_000_000_000_000,
+                "1" // one yocto
+            )
         )
-    )
+    }
 
     // add liquidity to $OCT <-> $stNEAR
     // no need to check for storage as storage deposit
@@ -586,9 +588,11 @@ async function addLiquidity(
             makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_1)
         )
     }
-    preTXs.push(
-        makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
-    );
+    if (metapoolActions.length > 0) {
+        preTXs.push(
+            makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
+        );
+    }
     preTXs.push(
         makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_2)
     );
