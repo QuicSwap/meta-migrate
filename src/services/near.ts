@@ -42,7 +42,6 @@ const change_storage: string[] = ["storage_deposit"]
 const view_ft: string[] = ["ft_balance_of"]
 const change_ft: string[] = ["ft_transfer_call", "ft_transfer"]
 
-const ADDRESS_OCT = "f5cfbc74057c610c8ef151a439252680ac68c6dc.factory.bridge.near"
 const OLD_POOL_ID = 47
 // TODO: Pool ID of $OCT<->$stNEAR
 const NEW_POOL_ID = 1889
@@ -66,7 +65,7 @@ const NEW_ACCOUNT_STORAGE_COST: string = nearAPI.utils.format.parseNearAmount(
 window.nearConfig = getConfig("mainnet")
 
 // Initializing contract
-async function initContracts() {
+async function initNear() {
     // Initializing connection to the NEAR node.
     window.near = await nearAPI.connect(
         Object.assign(
@@ -83,96 +82,40 @@ async function initContracts() {
     // Initializing Wallet based Account.
     window.walletAccount = new nearAPI.WalletAccount(window.near, null)
     window.account = window.walletAccount.account()
-
-    // Initializing our contract APIs by contract name and configuration.
-    window.contract_metapool = new nearAPI.Contract(
-        window.account,
-        window.nearConfig.ADDRESS_METAPOOL,
-        {
-            viewMethods: view_storage
-                .concat(view_ft)
-                .concat(["get_contract_state"]),
-            changeMethods: change_storage.concat(change_ft)
-        }
-    )
-    window.contract_wnear = new nearAPI.Contract(
-        window.account,
-        window.nearConfig.ADDRESS_WNEAR,
-        {
-            viewMethods: view_storage.concat(view_ft),
-            changeMethods: change_storage
-                .concat(change_ft)
-                .concat(["near_deposit", "near_withdraw"])
-        }
-    )
-    // https://docs.ref.finance/smart-contracts/ref-exchange
-    window.contract_ref_exchange = new nearAPI.Contract(
-        window.account,
-        window.nearConfig.ADDRESS_REF_EXCHANGE,
-        {
-            viewMethods: view_storage.concat([
-                "get_pool_shares",
-                "get_pool_total_shares",
-                "get_deposits",
-                "get_pool"
-            ]),
-            changeMethods: change_storage.concat([
-                "add_liquidity",
-                "remove_liquidity",
-                "mft_register",
-                "mft_transfer_call"
-            ])
-        }
-    )
-    // https://docs.ref.finance/smart-contracts/how_to_interact_with_ref-farming_contract
-    window.contract_ref_farming = new nearAPI.Contract(
-        window.account,
-        window.nearConfig.ADDRESS_REF_FARMING,
-        {
-            viewMethods: view_storage.concat([
-                "list_user_seeds",
-                "get_unclaimed_reward"
-            ]),
-            changeMethods: change_storage.concat([
-                "withdraw_seed",
-                "claim_reward_by_farm"
-            ])
-        }
-    )
 }
 
 // get user stake in OCT<>wNEAR farm
 async function getOldFarmingStake(): Promise<string> {
     const seeds: any = await window.account.viewFunction(
-        window.contract_ref_farming.contractId,
+        window.nearConfig.ADDRESS_REF_FARMING,
         "list_user_seeds",
         {
             account_id: window.account.accountId
         }
     )
-    return seeds[`v2.ref-finance.near@${OLD_POOL_ID}`]
-        ? seeds[`v2.ref-finance.near@${OLD_POOL_ID}`]
+    return seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${OLD_POOL_ID}`]
+        ? seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${OLD_POOL_ID}`]
         : "0"
 }
 
 // get user stake in OCT<>stNEAR farm
 async function getNewFarmingStake(): Promise<string> {
     const seeds: any = await window.account.viewFunction(
-        window.contract_ref_farming.contractId,
+        window.nearConfig.ADDRESS_REF_FARMING,
         "list_user_seeds",
         {
             account_id: window.account.accountId
         }
     )
-    return seeds[`v2.ref-finance.near@${NEW_POOL_ID}`]
-        ? seeds[`v2.ref-finance.near@${NEW_POOL_ID}`]
+    return seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`]
+        ? seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`]
         : "0"
 }
 
 // stake farm shares in OCT<>stNEAR farm
 async function stake(amnt: string): Promise<void> {
     const storage_balance: any = await window.account.viewFunction(
-        window.contract_ref_farming.contractId,
+        window.nearConfig.ADDRESS_REF_FARMING,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -200,7 +143,7 @@ async function stake(amnt: string): Promise<void> {
             "mft_transfer_call",
             {
                 receiver_id: window.nearConfig.ADDRESS_REF_FARMING,
-                token_id: `v2.ref-finance.near@${NEW_POOL_ID}`,
+                token_id: `${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`,
                 amount: amnt,
                 msg: ""
             },
@@ -211,15 +154,15 @@ async function stake(amnt: string): Promise<void> {
     const TXs = await Promise.all(
         storageAction !== undefined
             ? [
-                  makeTransaction(window.contract_ref_farming.contractId, [
+                  makeTransaction(window.nearConfig.ADDRESS_REF_FARMING, [
                       storageAction
                   ]),
-                  makeTransaction(window.contract_ref_exchange.contractId, [
+                  makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, [
                       stakingAction
                   ])
               ]
             : [
-                  makeTransaction(window.contract_ref_exchange.contractId, [
+                  makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, [
                       stakingAction
                   ])
               ]
@@ -235,7 +178,7 @@ async function unstake(amnt: string): Promise<void> {
     const actions: nearAPI.transactions.Action[] = []
     // query user storage
     const storage_balance: any = await window.account.viewFunction(
-        window.contract_ref_farming.contractId,
+        window.nearConfig.ADDRESS_REF_FARMING,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -260,7 +203,7 @@ async function unstake(amnt: string): Promise<void> {
         nearAPI.transactions.functionCall(
             "withdraw_seed",
             {
-                seed_id: `v2.ref-finance.near@${OLD_POOL_ID}`,
+                seed_id: `${window.nearConfig.ADDRESS_REF_EXCHANGE}@${OLD_POOL_ID}`,
                 amount: amnt,
                 msg: ""
             },
@@ -270,7 +213,7 @@ async function unstake(amnt: string): Promise<void> {
     )
 
     const TX: nearAPI.transactions.Transaction = await makeTransaction(
-        window.contract_ref_farming.contractId,
+        window.nearConfig.ADDRESS_REF_FARMING,
         actions
     )
 
@@ -294,7 +237,7 @@ async function getOldPoolInfo(): Promise<{
 }> {
     // get user shares
     const user_shares: string = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_pool_shares",
         {
             pool_id: OLD_POOL_ID,
@@ -310,7 +253,7 @@ async function getOldPoolInfo(): Promise<{
         amounts: string[]
         shares_total_supply: string
     } = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_pool",
         {
             pool_id: OLD_POOL_ID
@@ -334,7 +277,7 @@ async function getNewPoolInfo(): Promise<{
     amounts: string[]
 }> {
     const user_shares = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_pool_shares",
         {
             pool_id: NEW_POOL_ID,
@@ -349,7 +292,7 @@ async function getNewPoolInfo(): Promise<{
         amounts: string[]
         shares_total_supply: string
     } = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_pool",
         {
             pool_id: NEW_POOL_ID
@@ -369,7 +312,7 @@ async function removeLiquidity(
 
     // query user storage
     const storage_balance: any = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -404,7 +347,7 @@ async function removeLiquidity(
     )
 
     const TX: nearAPI.transactions.Transaction = await makeTransaction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         actions
     )
 
@@ -416,14 +359,14 @@ async function removeLiquidity(
 // get user wNEAR balance on Ref-finance
 async function getWnearBalanceOnRef(): Promise<string> {
     const balance = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_deposits",
         {
             account_id: window.account.accountId
         }
     )
-    return balance[window.contract_wnear.contractId]
-        ? balance[window.contract_wnear.contractId]
+    return balance[window.nearConfig.ADDRESS_WNEAR]
+        ? balance[window.nearConfig.ADDRESS_WNEAR]
         : "0"
 }
 
@@ -435,7 +378,7 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
 
     // query user storage balance on wNEAR contract
     const refStorage: any = await window.account.viewFunction(
-        window.contract_wnear.contractId,
+        window.nearConfig.ADDRESS_WNEAR,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -456,7 +399,7 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
         nearAPI.transactions.functionCall(
             "withdraw",
             {
-                token_id: window.contract_wnear.contractId,
+                token_id: window.nearConfig.ADDRESS_WNEAR,
                 // amount: utils.format.parseNearAmount(amount),
                 amount: wnear_amount
             },
@@ -467,7 +410,7 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
 
     // query user storage balance on wNEAR contract
     const wnearStorage: any = await window.account.viewFunction(
-        window.contract_wnear.contractId,
+        window.nearConfig.ADDRESS_WNEAR,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -506,9 +449,9 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
     )
 
     const TXs = await Promise.all([
-        makeTransaction(window.contract_ref_exchange.contractId, refActions),
-        makeTransaction(window.contract_wnear.contractId, wNearActions),
-        makeTransaction(window.contract_metapool.contractId, metapoolActions)
+        makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions),
+        makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions),
+        makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
     ])
 
     window.walletAccount.requestSignTransactions({
@@ -522,7 +465,7 @@ async function getMetapoolInfo(): Promise<{
     min_deposit_amount: string
 }> {
     const contract_state: any = await window.account.viewFunction(
-        window.contract_metapool.contractId,
+        window.nearConfig.ADDRESS_METAPOOL,
         "get_contract_state",
         {}
     )
@@ -535,7 +478,7 @@ async function getMetapoolInfo(): Promise<{
 // get user stNEAR on metapool
 async function getStnearBalance(): Promise<string> {
     const balance: string = await window.account.viewFunction(
-        window.contract_metapool.contractId,
+        window.nearConfig.ADDRESS_METAPOOL,
         "ft_balance_of",
         { account_id: window.account.accountId }
     )
@@ -545,28 +488,28 @@ async function getStnearBalance(): Promise<string> {
 // get user stNEAR balance on Ref-finance
 async function getStnearBalanceOnRef(): Promise<string> {
     const balance = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_deposits",
         {
             account_id: window.account.accountId
         }
     )
-    return balance[window.contract_metapool.contractId]
-        ? balance[window.contract_metapool.contractId]
+    return balance[window.nearConfig.ADDRESS_METAPOOL]
+        ? balance[window.nearConfig.ADDRESS_METAPOOL]
         : "0"
 }
 
 // get user stNEAR balance on Ref-finance
 async function getOctBalanceOnRef(): Promise<string> {
     const balance = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "get_deposits",
         {
             account_id: window.account.accountId
         }
     )
-    return balance[ADDRESS_OCT]
-        ? balance[ADDRESS_OCT]
+    return balance[window.nearConfig.ADDRESS_OCT]
+        ? balance[window.nearConfig.ADDRESS_OCT]
         : "0"
 }
 
@@ -583,7 +526,7 @@ async function addLiquidity(
 
     // query user storage on ref
     const storage_balance: any = await window.account.viewFunction(
-        window.contract_ref_exchange.contractId,
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
         "storage_balance_of",
         {
             account_id: window.account.accountId
@@ -612,7 +555,7 @@ async function addLiquidity(
         nearAPI.transactions.functionCall(
             "ft_transfer_call",
             {
-                receiver_id: window.contract_ref_exchange.contractId,
+                receiver_id: window.nearConfig.ADDRESS_REF_EXCHANGE,
                 amount: amount_stnear,
                 msg: ""
             },
@@ -640,14 +583,14 @@ async function addLiquidity(
     const preTXs: any = [];
     if (refActions_1.length > 0) {
         preTXs.push(
-            makeTransaction(window.contract_ref_exchange.contractId, refActions_1)
+            makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_1)
         )
     }
     preTXs.push(
-        makeTransaction(window.contract_metapool.contractId, metapoolActions)
+        makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
     );
     preTXs.push(
-        makeTransaction(window.contract_ref_exchange.contractId, refActions_2)
+        makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_2)
     );
     const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs);
 
@@ -692,7 +635,7 @@ async function makeTransaction(
 // Loads nearAPI and this contract into window scope.
 
 export {
-    initContracts,
+    initNear,
     getOldFarmingStake,
     getNewFarmingStake,
     stake,

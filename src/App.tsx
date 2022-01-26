@@ -6,7 +6,7 @@ import { Grid } from "@mui/material"
 import { useReducer } from "react"
 import { Refresh } from "./utils/refresh"
 import WalletComponent from "./components/wallet"
-import { initContracts } from "./services/near"
+import { initNear } from "./services/near"
 
 declare module "@mui/material/styles/createPalette" {
     interface Palette {
@@ -58,7 +58,7 @@ const theme = createTheme({
     spacing: 8
 })
 
-window.nearInitPromise = initContracts().then(window.FORCEUPDATE)
+window.nearInitPromise = initNear().then(window.FORCEUPDATE)
 
 export default function App() {
     const [, forceUpdate] = useReducer(x => x + 1, 0)
