@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Grid, Button, Icon } from "@mui/material"
-import { Call } from "../utils/call"
 import { Refresh } from "../utils/refresh"
 
 function getState(completed: boolean | null, denied?: boolean) {

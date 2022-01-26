@@ -1,14 +1,17 @@
-import { Grid, InputAdornment, TextField } from "@mui/material"
+import { Grid, Icon, InputAdornment, TextField } from "@mui/material"
 import { useTheme } from "@mui/styles"
 import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode, useReducer } from "react"
 import {
     getMetapoolInfo,
+    getNewFarmingStake,
+    getNewPoolInfo,
     getOldFarmingStake,
     getOldPoolInfo,
     getWnearBalanceOnRef,
     removeLiquidity,
+    stake,
     unstake,
     wnearToStnear
 } from "../services/near"
@@ -214,7 +217,7 @@ function getContent(page: number): ReactNode | null {
                                                   utils.format.formatNearAmount(
                                                       window.oldPoolInfo
                                                           .min_amounts[0] +
-                                                          "000000"
+                                                          "000000" // cheap way to divide by 1e6
                                                   )!
                                               ).toFixed(3)
                                             : "..."}
@@ -242,19 +245,13 @@ function getContent(page: number): ReactNode | null {
                                 window.REFRESHER[1] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getOldPoolInfo()
-                                                .then(
-                                                    res =>
-                                                        (window.oldPoolInfo =
-                                                            res)
+                                            getOldPoolInfo().then(res => {
+                                                window.oldPoolInfo = res
+                                                resolve(
+                                                    BigInt(res.user_shares) ===
+                                                        BigInt("0")
                                                 )
-                                                .then(res =>
-                                                    resolve(
-                                                        BigInt(
-                                                            res.user_shares
-                                                        ) === BigInt("0")
-                                                    )
-                                                )
+                                            })
                                         )
                                 )
                                 return window.REFRESHER[1]
@@ -330,7 +327,7 @@ function getContent(page: number): ReactNode | null {
                                                 utils.format.formatNearAmount(
                                                     window.minDepositAmount
                                                 )
-                                            ).toFixed(3)} wNEAR.`
+                                            ).toFixed(3)} $wNEAR.`
                                         },
                                         {
                                             test: (value: string) =>
@@ -348,7 +345,7 @@ function getContent(page: number): ReactNode | null {
                                                 utils.format.formatNearAmount(
                                                     window.wNEARBalanceOnRef
                                                 )
-                                            ).toFixed(3)} wNEAR on Ref-finance.`
+                                            ).toFixed(3)} $wNEAR on Ref-finance.`
                                         }
                                     ]}
                                     default={
@@ -394,22 +391,16 @@ function getContent(page: number): ReactNode | null {
                                         new Promise(resolve =>
                                             getWnearBalanceOnRef().then(
                                                 async res => {
-                                                    const [
-                                                        {
-                                                            st_near_price,
-                                                            min_deposit_amount
-                                                        },
-                                                        w_near_balance_on_ref
-                                                    ] = await Promise.all([
-                                                        getMetapoolInfo(),
-                                                        getWnearBalanceOnRef()
-                                                    ])
+                                                    const {
+                                                        st_near_price,
+                                                        min_deposit_amount
+                                                    } = await getMetapoolInfo()
                                                     window.stNEARPrice =
                                                         st_near_price
                                                     window.minDepositAmount =
                                                         min_deposit_amount
                                                     window.wNEARBalanceOnRef =
-                                                        w_near_balance_on_ref
+                                                        res
                                                     resolve(
                                                         BigInt(res) <
                                                             BigInt(
@@ -442,15 +433,99 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="reDeposit Funds" />
                     <StepComponent
-                        title="Add liquidity to pool"
-                        description="Deposit liquidity at OCT <-> stNEAR pool"
+                        title="1. Add liquidity to pool"
+                        description={
+                            <Description>
+                                <Input
+                                    id={1}
+                                    label="amount"
+                                    unit="OCT"
+                                    type="number"
+                                    pattern="^\d+(\.\d{0,18})?$"
+                                    assert={[
+                                        {
+                                            test: (value: string) =>
+                                                window.OCTBalanceOnRef !==
+                                                    undefined &&
+                                                BigInt(
+                                                    utils.format.parseNearAmount(
+                                                        value
+                                                    ) ?? "0"
+                                                ) >
+                                                    BigInt(
+                                                        window.OCTBalanceOnRef
+                                                    ),
+                                            msg: `Insufficient funds. You only have ${parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    window.OCTBalanceOnRef
+                                                )
+                                            ).toFixed(3)} $OCT on Ref-finance.`
+                                        }
+                                    ]}
+                                    default={
+                                        inputValuesUnmatched[1] ??
+                                        utils.format.formatNearAmount(
+                                            localStorage.getItem(
+                                                "OCTminAmountOut"
+                                            ) ?? "0"
+                                        )
+                                    }
+                                />
+                                <Icon sx={{ alignSelf: "center" }}>link</Icon>
+                                <Input
+                                    id={2}
+                                    label="amount"
+                                    unit="stNEAR"
+                                    type="number"
+                                    pattern="^\d+(\.\d{0,24})?$"
+                                    assert={[
+                                        {
+                                            test: (value: string) =>
+                                                window.stNEARBalanceOnRef !==
+                                                    undefined &&
+                                                window.stNEARBalance !==
+                                                    undefined &&
+                                                BigInt(
+                                                    utils.format.parseNearAmount(
+                                                        value
+                                                    ) ?? "0"
+                                                ) > (
+                                                    BigInt(
+                                                        window.stNEARBalanceOnRef
+                                                    ) + BigInt(
+                                                        window.stNEARBalance
+                                                    )
+                                                ),
+                                            msg: `Insufficient funds. You only have ${parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    (BigInt(
+                                                        window.stNEARBalanceOnRef ?? "0"
+                                                    ) + BigInt(
+                                                        window.stNEARBalance ?? "0"
+                                                    )).toString()
+                                                )
+                                            ).toFixed(3)} stNEAR in total.`
+                                        }
+                                    ]}
+                                    default={
+                                        inputValuesUnmatched[2] ?? "0"
+                                    }
+                                />
+                            </Description>
+                        }
                         completed={
                             window.REFRESHER[3] ??
                             (() => {
                                 window.REFRESHER[3] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            setTimeout(() => resolve(false), 10)
+                                            getNewPoolInfo().then(res => {
+                                                window.newPoolInfo = res
+                                                resolve(
+                                                    BigInt(res.user_shares) <=
+                                                        BigInt("1") // leave 1 LP share to occupy storage
+                                                )
+                                            })
                                         )
                                 )
                                 return window.REFRESHER[3]
@@ -459,21 +534,82 @@ function getContent(page: number): ReactNode | null {
                         // action={}
                     />
                     <StepComponent
-                        title="Add liquidity to farm"
-                        description="Deposit liquidity at OCT <-> stNEAR farm"
+                        title="2. Add liquidity to farm"
+                        description={
+                            <Description>
+                                You have {""}
+                                <span>
+                                    <Purple>
+                                        {window.newPoolInfo
+                                            ? parseFloat(
+                                                  utils.format
+                                                      .formatNearAmount(
+                                                          window.newPoolInfo
+                                                              .user_shares
+                                                      )
+                                                      .toString()
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} LP tokens {""}
+                                </span>
+                                in the OCT {"<->"} stNEAR pool.
+                                <Break />
+                                Supply them to the OCT {"<->"} stNEAR farm to
+                                start farming.
+                                <Break />
+                                You currently have {""}
+                                <span>
+                                    <Purple>
+                                        {window.newFarmingStake
+                                            ? parseFloat(
+                                                  utils.format
+                                                      .formatNearAmount(
+                                                          window.newFarmingStake
+                                                      )
+                                                      .toString()
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} LP tokens in the farm.
+                                </span>
+                            </Description>
+                        }
                         completed={
                             window.REFRESHER[4] ??
                             (() => {
                                 window.REFRESHER[4] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            setTimeout(() => resolve(false), 10)
-                                        )
+                                            getNewFarmingStake().then(
+                                                async res => {
+                                                    window.newFarmingStake = res
+                                                    const newPoolInfo =
+                                                        await getNewPoolInfo()
+                                                    resolve(
+                                                        BigInt(res) ===
+                                                            BigInt(0) &&
+                                                            BigInt(
+                                                                newPoolInfo.user_shares
+                                                            ) <= BigInt(1)
+                                                    )
+                                                }
+                                            )
+                                        ),
+                                    0
                                 )
                                 return window.REFRESHER[4]
                             })()
                         }
-                        // action={}
+                        action={() =>
+                            stake(
+                                (
+                                    BigInt(window.newPoolInfo.user_shares) -
+                                    BigInt("1")
+                                ) // leave 1 LP share to occupy storage
+                                    .toString()
+                            )
+                        }
                     />
                     <NavButtonComponent next back />
                 </>
