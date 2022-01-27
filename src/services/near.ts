@@ -112,6 +112,46 @@ async function getNewFarmingStake(): Promise<string> {
         : "0"
 }
 
+async function getOldPosition(): Promise<{
+    user_farm_shares: string;
+    user_lp_shares: string;
+    total_shares: string;
+    min_amounts: string[];
+}> {
+    const result =  await Promise.all([
+        getOldFarmingStake(),
+        getOldPoolInfo()
+    ]);
+    
+    return {
+        user_farm_shares: result[0],
+        user_lp_shares: result[1].user_shares,
+        total_shares: result[1].total_shares,
+        min_amounts: result[1].min_amounts
+    }
+}
+
+async function exitOldPosition(
+    staked_amount: string,
+    user_lp_shares: string,
+    min_amounts: string[]
+): Promise<void> {
+    const preTXs: any = [];
+
+    // if user has LP shares on farm, unstake them
+    if (BigInt(staked_amount) > BigInt("0")) {
+        preTXs.push( unstake(staked_amount) );
+    }
+    // remove liquidity from OCT <-> wNEAR pool
+    preTXs.push( removeLiquidity(user_lp_shares, min_amounts) );
+
+    const TXs = await Promise.all(preTXs);
+    
+    window.walletAccount.requestSignTransactions({
+        transactions: TXs
+    })
+}
+
 // stake farm shares in OCT<>stNEAR farm
 async function stake(amnt: string): Promise<void> {
     const storage_balance: any = await window.account.viewFunction(
@@ -174,7 +214,7 @@ async function stake(amnt: string): Promise<void> {
 }
 
 // unstake farm shares from OCT<>wNEAR farm
-async function unstake(amnt: string): Promise<void> {
+async function unstake(amnt: string): Promise<nearAPI.transactions.Transaction> {
     const actions: nearAPI.transactions.Action[] = []
     // query user storage
     const storage_balance: any = await window.account.viewFunction(
@@ -217,9 +257,7 @@ async function unstake(amnt: string): Promise<void> {
         actions
     )
 
-    window.walletAccount.requestSignTransactions({
-        transactions: [TX]
-    })
+    return TX;
 }
 
 // get user LP shares in OCT<>wNEAR pool
@@ -305,9 +343,8 @@ async function getNewPoolInfo(): Promise<{
 // remove liquidity from OCT<>wNEAR pool
 async function removeLiquidity(
     user_shares: string,
-    total_share: string,
     min_amounts: string[]
-): Promise<void> {
+): Promise<nearAPI.transactions.Transaction> {
     const actions: nearAPI.transactions.Action[] = []
 
     // query user storage
@@ -351,9 +388,7 @@ async function removeLiquidity(
         actions
     )
 
-    window.walletAccount.requestSignTransactions({
-        transactions: [TX]
-    })
+    return TX;
 }
 
 // get user wNEAR balance on Ref-finance
@@ -642,13 +677,11 @@ async function makeTransaction(
 
 export {
     initNear,
-    getOldFarmingStake,
+    getOldPosition,
+    exitOldPosition,
     getNewFarmingStake,
     stake,
-    unstake,
-    getOldPoolInfo,
     getNewPoolInfo,
-    removeLiquidity,
     getWnearBalanceOnRef,
     getOctBalanceOnRef,
     getStnearBalanceOnRef,
