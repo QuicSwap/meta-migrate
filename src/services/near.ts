@@ -38,11 +38,6 @@ declare global {
     }
 }
 
-const view_storage: string[] = ["storage_balance_bounds", "storage_balance_of"]
-const change_storage: string[] = ["storage_deposit"]
-const view_ft: string[] = ["ft_balance_of"]
-const change_ft: string[] = ["ft_transfer_call", "ft_transfer"]
-
 const OLD_POOL_ID = 47
 // TODO: Pool ID of $OCT<->$stNEAR
 const NEW_POOL_ID = 1889
