@@ -54,7 +54,7 @@ export default function TimelineComponent() {
                 <TimelineSeparator>
                     <TimelineDot color={getColor(3)} />
                 </TimelineSeparator>
-                <TimelineContent>DONE</TimelineContent>
+                <TimelineContent>PROFIT</TimelineContent>
             </TimelineItem>
         </Timeline>
     )

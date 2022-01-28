@@ -3,7 +3,8 @@ import { Grid, Button, Icon } from "@mui/material"
 import { Refresh } from "../utils/refresh"
 
 function getState(completed: boolean | null, denied?: boolean) {
-    if (completed === true) return <Icon>done</Icon>
+    if (window?.account?.accountId === undefined) return "SIGN IN TO RUN"
+    else if (completed === true) return <Icon>done</Icon>
     else if (denied !== undefined && denied) return <Icon>block</Icon>
     else if (completed === false) return "RUN"
     else return "..."

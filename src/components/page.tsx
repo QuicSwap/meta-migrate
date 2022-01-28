@@ -9,14 +9,12 @@ import {
     getNewFarmingStake,
     getNewPoolInfo,
     getOctBalanceOnRef,
-    getOldFarmingStake,
-    getOldPoolInfo,
     getStnearBalance,
     getStnearBalanceOnRef,
     getWnearBalanceOnRef,
-    removeLiquidity,
+    getOldPosition,
+    exitOldPosition,
     stake,
-    unstake,
     wnearToStnear
 } from "../services/near"
 import { Refresh } from "../utils/refresh"
@@ -69,6 +67,23 @@ const Description = (props: { children: any }) => (
 )
 
 const Break = () => <div style={{ width: "100%" }} />
+
+const Warning = (props: { children: any }) => {
+    const theme = useTheme() as any
+    return (
+        <span
+            style={{
+                display: "flex",
+                flexFlow: "row wrap",
+                color: theme.palette.warning.main,
+                fontWeight: "bold",
+                marginTop: "8px"
+            }}
+        >
+            <Icon>warning_amber</Icon> {props.children}
+        </span>
+    )
+}
 
 const Purple = (props: { children: any }) => {
     const theme = useTheme() as any
@@ -160,69 +175,32 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
-                        title="1. Unstake from OCT <-> wNEAR farm"
+                        title={'Unstake & remove liquidity.'}
                         description={
                             <Description>
-                                You have {""}
-                                <Purple>
-                                    {window.oldFarmingStake
-                                        ? parseFloat(
-                                              utils.format.formatNearAmount(
-                                                  window.oldFarmingStake
-                                              )!
-                                          ).toFixed(3)
-                                        : "..."}
-                                </Purple>
-                                {""} staked shares.
-                            </Description>
-                        }
-                        completed={
-                            window.REFRESHER[0] ??
-                            (() => {
-                                window.REFRESHER[0] = new Refresh(
-                                    () =>
-                                        new Promise(resolve =>
-                                            getOldFarmingStake()
-                                                .then(
-                                                    res =>
-                                                        (window.oldFarmingStake =
-                                                            res)
-                                                )
-                                                .then(res =>
-                                                    resolve(
-                                                        BigInt(res) ===
-                                                            BigInt("0")
-                                                    )
-                                                )
-                                        ),
-                                    0
-                                )
-                                return window.REFRESHER[0]
-                            })()
-                        }
-                        action={() => unstake(window.oldFarmingStake)}
-                    />
-                    <StepComponent
-                        title="2. Remove liquidity from OCT <-> wNEAR pool"
-                        description={
-                            <Description>
-                                You have {""}
-                                <Purple>
-                                    {window.oldPoolInfo
-                                        ? parseFloat(
-                                              utils.format.formatNearAmount(
-                                                  window.oldPoolInfo.user_shares
-                                              )!
-                                          ).toFixed(3)
-                                        : "..."}
-                                </Purple>
-                                {""} LP shares equal to {""}
+                                Unstake your LP shares from the OCT {'<->'} wNEAR farm and remove liquidity from the OCT {'<->'} wNEAR pool to receive OCT and wNEAR tokens.
+                                <Break />
+                                You have a total of {""}
                                 <span>
                                     <Purple>
-                                        {window.oldPoolInfo
+                                        {window.oldPosition
+                                            ? parseFloat(
+                                                utils.format.formatNearAmount(
+                                                    window.oldPosition.user_total_shares
+                                                )!
+                                            ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} LP shares
+                                </span>
+                                <Break />
+                                {"\u2248"} {""}
+                                <span>
+                                    <Purple>
+                                        {window.oldPosition
                                             ? parseFloat(
                                                   utils.format.formatNearAmount(
-                                                      window.oldPoolInfo
+                                                      window.oldPosition
                                                           .min_amounts[0] +
                                                           "000000" // cheap way to divide by 1e6
                                                   )!
@@ -233,10 +211,10 @@ function getContent(page: number): ReactNode | null {
                                 </span>
                                 <span>
                                     <Purple>
-                                        {window.oldPoolInfo
+                                        {window.oldPosition
                                             ? parseFloat(
                                                   utils.format.formatNearAmount(
-                                                      window.oldPoolInfo
+                                                      window.oldPosition
                                                           .min_amounts[1]
                                                   )!
                                               ).toFixed(3)
@@ -252,10 +230,12 @@ function getContent(page: number): ReactNode | null {
                                 window.REFRESHER[1] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getOldPoolInfo().then(res => {
-                                                window.oldPoolInfo = res
+                                            getOldPosition().then(res => {
+                                                window.oldPosition = res
                                                 resolve(
-                                                    BigInt(res.user_shares) ===
+                                                    BigInt(res.user_lp_shares) ===
+                                                        BigInt("0") && 
+                                                    BigInt(res.user_farm_shares) ===
                                                         BigInt("0")
                                                 )
                                             })
@@ -267,16 +247,16 @@ function getContent(page: number): ReactNode | null {
                         action={() => {
                             localStorage.setItem(
                                 "OCTminAmountOut",
-                                window.oldPoolInfo.min_amounts[0]
+                                window.oldPosition.min_amounts[0]
                             )
                             localStorage.setItem(
                                 "wNEARminAmountOut",
-                                window.oldPoolInfo.min_amounts[1]
+                                window.oldPosition.min_amounts[1]
                             )
-                            removeLiquidity(
-                                window.oldPoolInfo.user_shares,
-                                window.oldPoolInfo.total_shares,
-                                window.oldPoolInfo.min_amounts
+                            exitOldPosition(
+                                window.oldPosition.user_farm_shares,
+                                window.oldPosition.user_total_shares,
+                                window.oldPosition.min_amounts
                             )
                         }}
                     />
@@ -289,7 +269,7 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="wNEAR -> stNEAR" />
                     <StepComponent
-                        title={"Withdraw, unwrap & stake"}
+                        title={"Withdraw, unwrap & stake."}
                         description={
                             <Description>
                                 Withdraw your wNEAR from Ref-finance, unwrap it,
@@ -440,7 +420,7 @@ function getContent(page: number): ReactNode | null {
         case 2:
             return (
                 <>
-                    <TitleComponent title="reDeposit Funds" />
+                    <TitleComponent title="Enter OCT <-> stNEAR" />
                     <StepComponent
                         title="1. Add liquidity to the OCT <-> stNEAR pool."
                         description={
@@ -520,6 +500,7 @@ function getContent(page: number): ReactNode | null {
                                             window.newPoolInfo !== undefined &&
                                             !inputErrors[1]
                                         ) {
+                                            // https://stackoverflow.com/a/54409977/17894968
                                             inputValuesUnmatched[2] = (
                                                 parseFloat(value) /
                                                 (Number(
@@ -541,9 +522,9 @@ function getContent(page: number): ReactNode | null {
                                     default={
                                         inputValuesUnmatched[1] ??
                                         utils.format.formatNearAmount(
-                                            localStorage.getItem(
+                                            (localStorage.getItem(
                                                 "OCTminAmountOut"
-                                            ) + "000000" ?? "0"
+                                            ) ?? "0") + "000000"
                                         )
                                     }
                                 />
@@ -720,6 +701,7 @@ function getContent(page: number): ReactNode | null {
                         title="2. Stake on the OCT <-> stNEAR farm."
                         description={
                             <Description>
+                                <Break />
                                 You have {""}
                                 <span>
                                     <Purple>
@@ -737,8 +719,11 @@ function getContent(page: number): ReactNode | null {
                                     {""} LP tokens {""}
                                 </span>
                                 in the OCT {"<->"} stNEAR pool.
+                                <Warning>Temporarily disabled, waiting for OCT {'<->'} stNEAR farm.</Warning>
                             </Description>
                         }
+                        // TEMP
+                        denied={true}
                         completed={
                             window.REFRESHER[4] ??
                             (() => {
@@ -770,7 +755,7 @@ function getContent(page: number): ReactNode | null {
                                 (
                                     BigInt(window.newPoolInfo.user_shares) -
                                     BigInt("1")
-                                ) // leave 1 LP share to occupy storage
+                                ) // leave 1 LP share to occupy storage, https://github.com/ref-finance/ref-contracts/issues/36
                                     .toString()
                             )
                         }
@@ -837,7 +822,6 @@ function getContent(page: number): ReactNode | null {
                             return window.REFRESHER[5]
                         })()
                     }
-                    // action={}
                 />
             )
     }
@@ -865,3 +849,4 @@ export default function PageComponent(props: { page: number }) {
         </Grid>
     )
 }
+

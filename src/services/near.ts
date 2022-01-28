@@ -18,15 +18,17 @@ declare global {
         nearInitPromise: any
         oldFarmingStake: string
         newFarmingStake: string
-        oldPoolInfo: {
-            user_shares: string
+        oldPosition: {
+            user_total_shares: string
+            user_farm_shares: string
+            user_lp_shares: string
             total_shares: string
             min_amounts: string[]
         }
         newPoolInfo: {
-            user_shares: string
-            total_shares: string
-            amounts: string[]
+            user_shares: string;
+            total_shares: string;
+            amounts: string[];
         }
         stNEARPrice: string
         minDepositAmount: string
@@ -113,40 +115,50 @@ async function getNewFarmingStake(): Promise<string> {
 }
 
 async function getOldPosition(): Promise<{
-    user_farm_shares: string;
-    user_lp_shares: string;
-    total_shares: string;
-    min_amounts: string[];
+    user_total_shares: string
+    user_farm_shares: string
+    user_lp_shares: string
+    total_shares: string
+    min_amounts: string[]
 }> {
-    const result =  await Promise.all([
+    const [user_farm_shares, pool_info] = await Promise.all([
         getOldFarmingStake(),
         getOldPoolInfo()
-    ]);
-    
+    ])
+
+    const user_total_shares = (BigInt(user_farm_shares) + BigInt(pool_info.user_shares)).toString();
+
+    const min_amounts = calcMinAmountsOut(
+        user_total_shares,
+        pool_info.total_shares,
+        pool_info.amounts
+    )
+
     return {
-        user_farm_shares: result[0],
-        user_lp_shares: result[1].user_shares,
-        total_shares: result[1].total_shares,
-        min_amounts: result[1].min_amounts
+        user_total_shares,
+        user_farm_shares,
+        user_lp_shares: pool_info.user_shares,
+        total_shares: pool_info.total_shares,
+        min_amounts
     }
 }
 
 async function exitOldPosition(
     staked_amount: string,
-    user_lp_shares: string,
+    user_total_shares: string,
     min_amounts: string[]
 ): Promise<void> {
-    const preTXs: any = [];
+    const preTXs: any = []
 
     // if user has LP shares on farm, unstake them
     if (BigInt(staked_amount) > BigInt("0")) {
-        preTXs.push( unstake(staked_amount) );
+        preTXs.push(unstake(staked_amount))
     }
     // remove liquidity from OCT <-> wNEAR pool
-    preTXs.push( removeLiquidity(user_lp_shares, min_amounts) );
+    preTXs.push(removeLiquidity(user_total_shares, min_amounts))
 
-    const TXs = await Promise.all(preTXs);
-    
+    const TXs = await Promise.all(preTXs)
+
     window.walletAccount.requestSignTransactions({
         transactions: TXs
     })
@@ -214,7 +226,9 @@ async function stake(amnt: string): Promise<void> {
 }
 
 // unstake farm shares from OCT<>wNEAR farm
-async function unstake(amnt: string): Promise<nearAPI.transactions.Transaction> {
+async function unstake(
+    amnt: string
+): Promise<nearAPI.transactions.Transaction> {
     const actions: nearAPI.transactions.Action[] = []
     // query user storage
     const storage_balance: any = await window.account.viewFunction(
@@ -257,7 +271,20 @@ async function unstake(amnt: string): Promise<nearAPI.transactions.Transaction> 
         actions
     )
 
-    return TX;
+    return TX
+}
+
+function calcMinAmountsOut(
+    user_shares: string,
+    total_shares: string,
+    amounts: string[]
+): string[] {
+    return amounts.map(amount => {
+        let exact_amount =
+            (BigInt(amount) * BigInt(user_shares)) / BigInt(total_shares)
+        // add 0.01% slippage tolerance
+        return ((exact_amount * BigInt("999")) / BigInt("1000")).toString()
+    })
 }
 
 // get user LP shares in OCT<>wNEAR pool
@@ -271,7 +298,7 @@ async function unstake(amnt: string): Promise<nearAPI.transactions.Transaction> 
 async function getOldPoolInfo(): Promise<{
     user_shares: string
     total_shares: string
-    min_amounts: string[]
+    amounts: string[]
 }> {
     // get user shares
     const user_shares: string = await window.account.viewFunction(
@@ -298,15 +325,7 @@ async function getOldPoolInfo(): Promise<{
         }
     )
 
-    // calculate min amounts
-    const min_amounts = amounts.map(amount => {
-        let exact_amount =
-            (BigInt(amount) * BigInt(user_shares)) / BigInt(total_shares)
-        // add 0.01% slippage tolerance
-        return ((exact_amount * BigInt("999")) / BigInt("1000")).toString()
-    })
-
-    return { user_shares, total_shares, min_amounts }
+    return { user_shares, total_shares, amounts }
 }
 
 async function getNewPoolInfo(): Promise<{
@@ -388,7 +407,7 @@ async function removeLiquidity(
         actions
     )
 
-    return TX;
+    return TX
 }
 
 // get user wNEAR balance on Ref-finance
