@@ -802,7 +802,7 @@ function getContent(page: number): ReactNode | null {
             return (
                 <>
                     <TitleComponent title="Happy Farming!" />
-                    <img src={meme} alt="meme" />
+                    <img style={{ height: "100%" }} src={meme} alt="meme" />
                     <Box
                         sx={{
                             my: 2
@@ -962,7 +962,8 @@ function getContent(page: number): ReactNode | null {
                                                     {row.location}&nbsp;
                                                     <Icon
                                                         sx={{
-                                                            verticalAlign: "middle",
+                                                            verticalAlign:
+                                                                "middle",
                                                             ml: 1,
                                                             color: "#aaa",
                                                             fontSize: "1.2em",
