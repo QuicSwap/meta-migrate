@@ -56,6 +56,12 @@ export default function TimelineComponent() {
                 </TimelineSeparator>
                 <TimelineContent>PROFIT</TimelineContent>
             </TimelineItem>
+            <TimelineItem onClick={() => jumpTo(4)}>
+                <TimelineSeparator>
+                    <TimelineDot color={getColor(4)} />
+                </TimelineSeparator>
+                <TimelineContent>LOCATE MY FUNDS</TimelineContent>
+            </TimelineItem>
         </Timeline>
     )
 }

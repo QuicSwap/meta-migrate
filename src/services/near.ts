@@ -16,7 +16,6 @@ declare global {
         contract_ref_farming: nearAPI.Contract
         nearConfig: any
         nearInitPromise: any
-        oldFarmingStake: string
         newFarmingStake: string
         oldPosition: {
             user_total_shares: string
@@ -26,9 +25,9 @@ declare global {
             min_amounts: string[]
         }
         newPoolInfo: {
-            user_shares: string;
-            total_shares: string;
-            amounts: string[];
+            user_shares: string
+            total_shares: string
+            amounts: string[]
         }
         stNEARPrice: string
         minDepositAmount: string
@@ -126,7 +125,9 @@ async function getOldPosition(): Promise<{
         getOldPoolInfo()
     ])
 
-    const user_total_shares = (BigInt(user_farm_shares) + BigInt(pool_info.user_shares)).toString();
+    const user_total_shares = (
+        BigInt(user_farm_shares) + BigInt(pool_info.user_shares)
+    ).toString()
 
     const min_amounts = calcMinAmountsOut(
         user_total_shares,
@@ -707,5 +708,7 @@ export {
     getStnearBalance,
     wnearToStnear,
     getMetapoolInfo,
-    addLiquidity
+    addLiquidity,
+    OLD_POOL_ID,
+    NEW_POOL_ID
 }

@@ -1,4 +1,16 @@
-import { Box, Grid, Icon, InputAdornment, TextField } from "@mui/material"
+import {
+    Box,
+    Grid,
+    Icon,
+    InputAdornment,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField
+} from "@mui/material"
 import { useTheme } from "@mui/styles"
 import { utils } from "near-api-js"
 import * as React from "react"
@@ -15,7 +27,9 @@ import {
     getOldPosition,
     exitOldPosition,
     stake,
-    wnearToStnear
+    wnearToStnear,
+    OLD_POOL_ID,
+    NEW_POOL_ID
 } from "../services/near"
 import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
@@ -175,20 +189,24 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
-                        title={'Unstake & remove liquidity.'}
+                        title={"Unstake & remove liquidity."}
                         description={
                             <Description>
-                                Unstake your LP shares from the OCT {'<->'} wNEAR farm and remove liquidity from the OCT {'<->'} wNEAR pool to receive OCT and wNEAR tokens.
+                                Unstake your LP shares from the OCT {"<->"}{" "}
+                                wNEAR farm and remove liquidity from the OCT{" "}
+                                {"<->"} wNEAR pool to receive OCT and wNEAR
+                                tokens.
                                 <Break />
                                 You have a total of {""}
                                 <span>
                                     <Purple>
                                         {window.oldPosition
                                             ? parseFloat(
-                                                utils.format.formatNearAmount(
-                                                    window.oldPosition.user_total_shares
-                                                )!
-                                            ).toFixed(3)
+                                                  utils.format.formatNearAmount(
+                                                      window.oldPosition
+                                                          .user_total_shares
+                                                  )!
+                                              ).toFixed(3)
                                             : "..."}
                                     </Purple>
                                     {""} LP shares
@@ -233,10 +251,12 @@ function getContent(page: number): ReactNode | null {
                                             getOldPosition().then(res => {
                                                 window.oldPosition = res
                                                 resolve(
-                                                    BigInt(res.user_lp_shares) ===
-                                                        BigInt("0") && 
-                                                    BigInt(res.user_farm_shares) ===
-                                                        BigInt("0")
+                                                    BigInt(
+                                                        res.user_lp_shares
+                                                    ) === BigInt("0") &&
+                                                        BigInt(
+                                                            res.user_farm_shares
+                                                        ) === BigInt("0")
                                                 )
                                             })
                                         )
@@ -719,7 +739,10 @@ function getContent(page: number): ReactNode | null {
                                     {""} LP tokens {""}
                                 </span>
                                 in the OCT {"<->"} stNEAR pool.
-                                <Warning>Temporarily disabled, waiting for OCT {'<->'} stNEAR farm.</Warning>
+                                <Warning>
+                                    Temporarily disabled, waiting for OCT{" "}
+                                    {"<->"} stNEAR farm.
+                                </Warning>
                             </Description>
                         }
                         // TEMP
@@ -805,25 +828,181 @@ function getContent(page: number): ReactNode | null {
                 </>
             )
 
-        default:
+        case 4:
+            if (window.REFRESHER[6] === undefined)
+                window.REFRESHER[6] = new Refresh(
+                    () =>
+                        new Promise(async resolve => {
+                            const [
+                                oldPosition,
+                                wNEARBalanceOnRef,
+                                stNEARBalanceOnRef,
+                                OCTBalanceOnRef,
+                                stNEARBalance,
+                                newPoolInfo,
+                                newFarmingStake
+                            ] = await Promise.all([
+                                getOldPosition(),
+                                getWnearBalanceOnRef(),
+                                getStnearBalanceOnRef(),
+                                getOctBalanceOnRef(),
+                                getStnearBalance(),
+                                getNewPoolInfo(),
+                                getNewFarmingStake()
+                            ])
+                            window.oldPosition = oldPosition
+                            window.wNEARBalanceOnRef = wNEARBalanceOnRef
+                            window.stNEARBalanceOnRef = stNEARBalanceOnRef
+                            window.OCTBalanceOnRef = OCTBalanceOnRef
+                            window.stNEARBalance = stNEARBalance
+                            window.newPoolInfo = newPoolInfo
+                            window.newFarmingStake = newFarmingStake
+                            resolve(true)
+                        }),
+                    0
+                )
+            const rows = [
+                {
+                    location: "OCT <-> wNEAR Farm",
+                    link: `https://app.ref.finance/farms`,
+                    amount: window?.oldPosition?.user_farm_shares,
+                    unit: "LP"
+                },
+                {
+                    location: "OCT <-> wNEAR Pool",
+                    link: `https://app.ref.finance/pool/${OLD_POOL_ID}`,
+                    amount: window?.oldPosition?.user_lp_shares,
+                    unit: "LP"
+                },
+                {
+                    location: "Ref-Finance",
+                    link: `https://app.ref.finance/account`,
+                    amount: window?.wNEARBalanceOnRef,
+                    unit: "wNEAR",
+                    noline: true
+                },
+                {
+                    location: "",
+                    link: `https://app.ref.finance/account`,
+                    amount: window?.OCTBalanceOnRef,
+                    unit: "OCT",
+                    noline: true
+                },
+                {
+                    location: "",
+                    link: `https://app.ref.finance/account`,
+                    amount: window?.stNEARBalanceOnRef,
+                    unit: "stNEAR"
+                },
+                {
+                    location: "NEAR wallet",
+                    link: `https://wallet.near.org/`,
+                    amount: window?.stNEARBalance,
+                    unit: "stNEAR"
+                },
+                {
+                    location: "OCT <-> stNEAR Pool",
+                    link: `https://app.ref.finance/pool/${NEW_POOL_ID}`,
+                    amount: window?.newPoolInfo?.user_shares,
+                    unit: "LP"
+                },
+                {
+                    location: "OCT <-> stNEAR Farm",
+                    link: `https://app.ref.finance/farms`,
+                    amount: window?.newFarmingStake,
+                    unit: "LP"
+                }
+            ]
             return (
-                <StepComponent
-                    title="Something went wrong"
-                    description="Try to clear site data"
-                    completed={
-                        window.REFRESHER[5] ??
-                        (() => {
-                            window.REFRESHER[5] = new Refresh(
-                                () =>
-                                    new Promise(resolve =>
-                                        setTimeout(() => resolve(false), 10)
-                                    )
-                            )
-                            return window.REFRESHER[5]
-                        })()
-                    }
-                />
+                <>
+                    <TableContainer>
+                        <Table
+                            stickyHeader
+                            sx={{
+                                width: 1
+                            }}
+                        >
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Location</TableCell>
+                                    <TableCell align="right">Amount</TableCell>
+                                    <TableCell align="left"></TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {rows.map(row => (
+                                    <TableRow
+                                        key={row.location}
+                                        sx={
+                                            row.noline
+                                                ? {
+                                                      "& *": {
+                                                          border: 0
+                                                      }
+                                                  }
+                                                : {
+                                                      "&:last-child td, &:last-child th":
+                                                          { border: 0 }
+                                                  }
+                                        }
+                                    >
+                                        <TableCell
+                                            component="th"
+                                            scope="row"
+                                            sx={{
+                                                display: "flex",
+                                                cursor: "pointer"
+                                            }}
+                                            onClick={event =>
+                                                (window.location.href =
+                                                    row.link)
+                                            }
+                                        >
+                                            {row.location !== "" ? (
+                                                <>
+                                                    {row.location}&nbsp;
+                                                    <Icon
+                                                        sx={{
+                                                            color: "#aaa",
+                                                            fontSize: "1.5em",
+                                                            "&:hover": {
+                                                                color: "#000"
+                                                            }
+                                                        }}
+                                                    >
+                                                        open_in_new
+                                                    </Icon>
+                                                </>
+                                            ) : (
+                                                <>&nbsp;</>
+                                            )}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {row.amount
+                                                ? parseFloat(
+                                                      utils.format.formatNearAmount(
+                                                          row.amount +
+                                                              (row.unit ===
+                                                              "OCT"
+                                                                  ? "000000"
+                                                                  : "")
+                                                      )!
+                                                  ).toFixed(3)
+                                                : "..."}{" "}
+                                        </TableCell>
+                                        <TableCell sx={{ width: "10ch" }}>
+                                            {row.unit}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </>
             )
+
+        default:
+            return <TitleComponent title="Something went wrong" />
     }
 }
 
@@ -849,4 +1028,3 @@ export default function PageComponent(props: { page: number }) {
         </Grid>
     )
 }
-
