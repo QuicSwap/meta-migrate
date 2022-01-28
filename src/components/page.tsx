@@ -175,20 +175,24 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="Exit OCT <-> wNEAR" />
                     <StepComponent
-                        title={'Unstake & remove liquidity.'}
+                        title={"Unstake & remove liquidity."}
                         description={
                             <Description>
-                                Unstake your LP shares from the OCT {'<->'} wNEAR farm and remove liquidity from the OCT {'<->'} wNEAR pool to receive OCT and wNEAR tokens.
+                                Unstake your LP shares from the OCT {"<->"}{" "}
+                                wNEAR farm and remove liquidity from the OCT{" "}
+                                {"<->"} wNEAR pool to receive OCT and wNEAR
+                                tokens.
                                 <Break />
                                 You have a total of {""}
                                 <span>
                                     <Purple>
                                         {window.oldPosition
                                             ? parseFloat(
-                                                utils.format.formatNearAmount(
-                                                    window.oldPosition.user_total_shares
-                                                )!
-                                            ).toFixed(3)
+                                                  utils.format.formatNearAmount(
+                                                      window.oldPosition
+                                                          .user_total_shares
+                                                  )!
+                                              ).toFixed(3)
                                             : "..."}
                                     </Purple>
                                     {""} LP shares
@@ -233,10 +237,12 @@ function getContent(page: number): ReactNode | null {
                                             getOldPosition().then(res => {
                                                 window.oldPosition = res
                                                 resolve(
-                                                    BigInt(res.user_lp_shares) ===
-                                                        BigInt("0") && 
-                                                    BigInt(res.user_farm_shares) ===
-                                                        BigInt("0")
+                                                    BigInt(
+                                                        res.user_lp_shares
+                                                    ) === BigInt("0") &&
+                                                        BigInt(
+                                                            res.user_farm_shares
+                                                        ) === BigInt("0")
                                                 )
                                             })
                                         )
@@ -719,7 +725,10 @@ function getContent(page: number): ReactNode | null {
                                     {""} LP tokens {""}
                                 </span>
                                 in the OCT {"<->"} stNEAR pool.
-                                <Warning>Temporarily disabled, waiting for OCT {'<->'} stNEAR farm.</Warning>
+                                <Warning>
+                                    Temporarily disabled, waiting for OCT{" "}
+                                    {"<->"} stNEAR farm.
+                                </Warning>
                             </Description>
                         }
                         // TEMP
@@ -849,4 +858,3 @@ export default function PageComponent(props: { page: number }) {
         </Grid>
     )
 }
-

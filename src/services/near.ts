@@ -26,9 +26,9 @@ declare global {
             min_amounts: string[]
         }
         newPoolInfo: {
-            user_shares: string;
-            total_shares: string;
-            amounts: string[];
+            user_shares: string
+            total_shares: string
+            amounts: string[]
         }
         stNEARPrice: string
         minDepositAmount: string
@@ -38,11 +38,6 @@ declare global {
         stNEARBalance: string
     }
 }
-
-const view_storage: string[] = ["storage_balance_bounds", "storage_balance_of"]
-const change_storage: string[] = ["storage_deposit"]
-const view_ft: string[] = ["ft_balance_of"]
-const change_ft: string[] = ["ft_transfer_call", "ft_transfer"]
 
 const OLD_POOL_ID = 47
 // TODO: Pool ID of $OCT<->$stNEAR
@@ -126,7 +121,9 @@ async function getOldPosition(): Promise<{
         getOldPoolInfo()
     ])
 
-    const user_total_shares = (BigInt(user_farm_shares) + BigInt(pool_info.user_shares)).toString();
+    const user_total_shares = (
+        BigInt(user_farm_shares) + BigInt(pool_info.user_shares)
+    ).toString()
 
     const min_amounts = calcMinAmountsOut(
         user_total_shares,
