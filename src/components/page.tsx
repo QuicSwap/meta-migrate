@@ -950,7 +950,6 @@ function getContent(page: number): ReactNode | null {
                                             component="th"
                                             scope="row"
                                             sx={{
-                                                display: "flex",
                                                 cursor: "pointer"
                                             }}
                                             onClick={event =>
@@ -963,8 +962,10 @@ function getContent(page: number): ReactNode | null {
                                                     {row.location}&nbsp;
                                                     <Icon
                                                         sx={{
+                                                            verticalAlign: "middle",
+                                                            ml: 1,
                                                             color: "#aaa",
-                                                            fontSize: "1.5em",
+                                                            fontSize: "1.2em",
                                                             "&:hover": {
                                                                 color: "#000"
                                                             }
