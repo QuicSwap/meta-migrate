@@ -289,12 +289,15 @@ function getContent(page: number): ReactNode | null {
                 <>
                     <TitleComponent title="wNEAR -> stNEAR" />
                     <StepComponent
-                        title={"Withdraw, unwrap & stake."}
+                        sx={{
+                            button: {
+                                display: "none"
+                            },
+                            flex: 2
+                        }}
+                        title={"Specify the wNEAR amount you want to stake."}
                         description={
                             <Description>
-                                Withdraw your wNEAR from Ref-finance, unwrap it,
-                                and stake it with MetaPool to get stNEAR.
-                                <Break />
                                 You currently have {""}
                                 <span>
                                     <Purple>
@@ -389,7 +392,51 @@ function getContent(page: number): ReactNode | null {
                                     </Purple>
                                     {""} $stNEAR.
                                 </span>
-                                <Break />
+                            </Description>
+                        }
+                        completed={
+                            window.EMPTY_REFRESH ??
+                            (() => {
+                                window.EMPTY_REFRESH = new Refresh(
+                                    () => Promise.resolve(true),
+                                    0
+                                )
+                                return window.EMPTY_REFRESH
+                            })()
+                        }
+                    />
+                    <StepComponent
+                        title={"Withdraw & unwrap."}
+                        description={
+                            <Description>
+                                Withdraw your wNEAR from Ref-finance and unwrap
+                                it.
+                            </Description>
+                        }
+                        completed={
+                            window.EMPTY_REFRESH ??
+                            (() => {
+                                window.EMPTY_REFRESH = new Refresh(
+                                    () => Promise.resolve(true),
+                                    0
+                                )
+                                return window.EMPTY_REFRESH
+                            })()
+                        }
+                        denied={inputErrors[0]}
+                        action={() =>
+                            wnearToStnear(
+                                utils.format.parseNearAmount(
+                                    inputValues[0]
+                                ) as string
+                            )
+                        }
+                    />
+                    <StepComponent
+                        title={"Stake."}
+                        description={
+                            <Description>
+                                Stake your NEAR with MetaPool to get stNEAR.
                             </Description>
                         }
                         completed={

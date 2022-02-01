@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Grid, Button, Icon } from "@mui/material"
+import { Grid, Button, Icon, SxProps } from "@mui/material"
 import { Refresh } from "../utils/refresh"
 
 function getState(completed: boolean | null, denied?: boolean) {
@@ -11,6 +11,7 @@ function getState(completed: boolean | null, denied?: boolean) {
 }
 
 export default function StepComponent(props: {
+    sx?: SxProps
     title: string
     description: any
     completed: Refresh
@@ -31,7 +32,8 @@ export default function StepComponent(props: {
                 bgcolor: "background.default",
                 borderRadius: "8px",
                 flex: 1,
-                mb: 4
+                mb: 4,
+                ...props.sx
             }}
             direction="row"
             justifyContent="space-evenly"
@@ -42,7 +44,7 @@ export default function StepComponent(props: {
                 <br />
                 {props.description}
             </Grid>
-            <Grid item>
+            <Grid item xs={1}>
                 <Button
                     variant="contained"
                     sx={{

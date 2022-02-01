@@ -20,7 +20,8 @@ declare module "@mui/material/styles/createPalette" {
 declare global {
     interface Window {
         FORCEUPDATE: any
-        REFRESHER: Refresh[]
+        REFRESHER: Refresh[],
+        EMPTY_REFRESH: Refresh
     }
 }
 
