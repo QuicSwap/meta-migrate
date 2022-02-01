@@ -19,6 +19,7 @@ export default function TimelineComponent() {
     return (
         <Timeline
             sx={{
+                flexBasis: "200px",
                 alignItems: "end",
                 "& > .MuiTimelineItem-root::before": {
                     flex: 0

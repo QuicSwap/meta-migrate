@@ -44,7 +44,7 @@ export default function StepComponent(props: {
                 <br />
                 {props.description}
             </Grid>
-            <Grid item xs={1}>
+            <Grid item>
                 <Button
                     variant="contained"
                     sx={{

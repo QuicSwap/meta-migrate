@@ -20,6 +20,7 @@ import {
     getMetapoolInfo,
     getNewFarmingStake,
     getNewPoolInfo,
+    getNativeNearBalance,
     getOctBalanceOnRef,
     getStnearBalance,
     getStnearBalanceOnRef,
@@ -27,7 +28,7 @@ import {
     getOldPosition,
     exitOldPosition,
     stake,
-    wnearToStnear,
+    nearToStnear,
     OLD_POOL_ID,
     NEW_POOL_ID
 } from "../services/near"
@@ -60,12 +61,18 @@ const setInputErrors = (
     id: number,
     pattern?: string,
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
-) =>
-    (inputErrors[id] =
+) => {
+    const error =
         (pattern !== undefined &&
             inputValuesUnmatched[id].match(pattern) === null) ||
         (assert !== undefined &&
-            assert.some(a => a.test(inputValuesUnmatched[id]))))
+            assert.some(a => a.test(inputValuesUnmatched[id])))
+
+    if (inputErrors[id] !== error) {
+        inputErrors[id] = error
+        updatePage()
+    }
+}
 
 const Description = (props: { children: any }) => (
     <div
@@ -81,6 +88,8 @@ const Description = (props: { children: any }) => (
 )
 
 const Break = () => <div style={{ width: "100%" }} />
+
+const Seperate = () => <div style={{ width: "100%", height: "0.5em" }} />
 
 const Warning = (props: { children: any }) => {
     const theme = useTheme() as any
@@ -106,6 +115,21 @@ const Purple = (props: { children: any }) => {
             style={{
                 color: theme.palette.primary.main,
                 fontWeight: "bold"
+            }}
+        >
+            {props.children}
+        </span>
+    )
+}
+
+const Note = (props: { children: any }) => {
+    return (
+        <span
+            style={{
+                fontWeight: "lighter",
+                fontSize: "small",
+                opacity: 0.5,
+                paddingTop: "8px"
             }}
         >
             {props.children}
@@ -195,8 +219,8 @@ function getContent(page: number): ReactNode | null {
                                 Unstake your LP shares from the OCT {"<->"}{" "}
                                 wNEAR farm and remove liquidity from the OCT{" "}
                                 {"<->"} wNEAR pool to receive OCT and wNEAR
-                                tokens.
-                                <Break />
+                                tokens. Your wNEAR will be withdrawn and unwrapped automatically.
+                                <Seperate />
                                 You have a total of {""}
                                 <span>
                                     <Purple>
@@ -238,8 +262,10 @@ function getContent(page: number): ReactNode | null {
                                               ).toFixed(3)
                                             : "..."}
                                     </Purple>
-                                    {""} $wNEAR.
+                                    {""} $NEAR.
                                 </span>
+                                <Break/>
+                                <Note>Execution might take a while.</Note>
                             </Description>
                         }
                         completed={
@@ -287,37 +313,33 @@ function getContent(page: number): ReactNode | null {
         case 1:
             return (
                 <>
-                    <TitleComponent title="wNEAR -> stNEAR" />
+                    <TitleComponent title="NEAR -> stNEAR" />
                     <StepComponent
-                        sx={{
-                            button: {
-                                display: "none"
-                            },
-                            flex: 2
-                        }}
-                        title={"Specify the wNEAR amount you want to stake."}
+                        title={"Stake NEAR."}
                         description={
                             <Description>
+                                Stake your NEAR with MetaPool to get stNEAR.
+                                <Break />
                                 You currently have {""}
                                 <span>
                                     <Purple>
-                                        {window.wNEARBalanceOnRef
+                                        {window.nativeNEARBalance
                                             ? parseFloat(
                                                   utils.format
                                                       .formatNearAmount(
-                                                          window.wNEARBalanceOnRef
+                                                          window.nativeNEARBalance
                                                       )
                                                       .toString()
                                               ).toFixed(3)
                                             : "..."}
                                     </Purple>
-                                    {""} $wNEAR on Ref-finance.
+                                    {""} $NEAR in your wallet.
                                 </span>
                                 <Break />
                                 <Input
                                     id={0}
                                     label="amount"
-                                    unit="wNEAR"
+                                    unit="NEAR"
                                     type="number"
                                     pattern="^\d+(\.\d{0,24})?$"
                                     assert={[
@@ -337,11 +359,11 @@ function getContent(page: number): ReactNode | null {
                                                 utils.format.formatNearAmount(
                                                     window.minDepositAmount
                                                 )
-                                            ).toFixed(3)} $wNEAR.`
+                                            ).toFixed(3)} $NEAR.`
                                         },
                                         {
                                             test: (value: string) =>
-                                                window.wNEARBalanceOnRef !==
+                                                window.nativeNEARBalance !==
                                                     undefined &&
                                                 BigInt(
                                                     utils.format.parseNearAmount(
@@ -349,15 +371,13 @@ function getContent(page: number): ReactNode | null {
                                                     ) ?? "0"
                                                 ) >
                                                     BigInt(
-                                                        window.wNEARBalanceOnRef
+                                                        window.nativeNEARBalance
                                                     ),
                                             msg: `Insufficient funds. You only have ${parseFloat(
                                                 utils.format.formatNearAmount(
-                                                    window.wNEARBalanceOnRef
+                                                    window.nativeNEARBalance
                                                 )
-                                            ).toFixed(
-                                                3
-                                            )} $wNEAR on Ref-finance.`
+                                            ).toFixed(3)} $NEAR in your wallet.`
                                         }
                                     ]}
                                     default={
@@ -395,76 +415,33 @@ function getContent(page: number): ReactNode | null {
                             </Description>
                         }
                         completed={
-                            window.EMPTY_REFRESH ??
-                            (() => {
-                                window.EMPTY_REFRESH = new Refresh(
-                                    () => Promise.resolve(true),
-                                    0
-                                )
-                                return window.EMPTY_REFRESH
-                            })()
-                        }
-                    />
-                    <StepComponent
-                        title={"Withdraw & unwrap."}
-                        description={
-                            <Description>
-                                Withdraw your wNEAR from Ref-finance and unwrap
-                                it.
-                            </Description>
-                        }
-                        completed={
-                            window.EMPTY_REFRESH ??
-                            (() => {
-                                window.EMPTY_REFRESH = new Refresh(
-                                    () => Promise.resolve(true),
-                                    0
-                                )
-                                return window.EMPTY_REFRESH
-                            })()
-                        }
-                        denied={inputErrors[0]}
-                        action={() =>
-                            wnearToStnear(
-                                utils.format.parseNearAmount(
-                                    inputValues[0]
-                                ) as string
-                            )
-                        }
-                    />
-                    <StepComponent
-                        title={"Stake."}
-                        description={
-                            <Description>
-                                Stake your NEAR with MetaPool to get stNEAR.
-                            </Description>
-                        }
-                        completed={
                             window.REFRESHER[2] ??
                             (() => {
                                 window.REFRESHER[2] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getWnearBalanceOnRef().then(
-                                                async res => {
-                                                    const {
-                                                        st_near_price,
-                                                        min_deposit_amount
-                                                    } = await getMetapoolInfo()
-                                                    window.stNEARPrice =
-                                                        st_near_price
-                                                    window.minDepositAmount =
-                                                        min_deposit_amount
-                                                    window.wNEARBalanceOnRef =
-                                                        res
-                                                    resolve(
-                                                        BigInt(res) <
-                                                            BigInt(
-                                                                min_deposit_amount
-                                                            )
-                                                    )
-                                                }
-                                            )
+                                            Promise.all([
+                                                getNativeNearBalance(),
+                                                getWnearBalanceOnRef(),
+                                                getMetapoolInfo()
+                                            ]).then(res => {
+                                                window.nativeNEARBalance =
+                                                    res[0]
+                                                window.wNEARBalanceOnRef =
+                                                    res[1]
+                                                window.stNEARPrice =
+                                                    res[2].st_near_price
+                                                window.minDepositAmount =
+                                                    res[2].min_deposit_amount
+                                                resolve(
+                                                    BigInt(
+                                                        window.nativeNEARBalance
+                                                    ) <
+                                                        BigInt(
+                                                            window.minDepositAmount
+                                                        )
+                                                )
+                                            })
                                         ),
                                     0
                                 )
@@ -473,7 +450,7 @@ function getContent(page: number): ReactNode | null {
                         }
                         denied={inputErrors[0]}
                         action={() =>
-                            wnearToStnear(
+                            nearToStnear(
                                 utils.format.parseNearAmount(
                                     inputValues[0]
                                 ) as string
@@ -717,22 +694,17 @@ function getContent(page: number): ReactNode | null {
                                 window.REFRESHER[3] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getNewPoolInfo().then(async res => {
-                                                window.newPoolInfo = res
-                                                const [
-                                                    OCTOnRef,
-                                                    stNEAROnRef,
-                                                    stNEAR
-                                                ] = await Promise.all([
-                                                    getOctBalanceOnRef(),
-                                                    getStnearBalanceOnRef(),
-                                                    getStnearBalance()
-                                                ])
-                                                window.OCTBalanceOnRef =
-                                                    OCTOnRef
+                                            Promise.all([
+                                                getNewPoolInfo(),
+                                                getOctBalanceOnRef(),
+                                                getStnearBalanceOnRef(),
+                                                getStnearBalance()
+                                            ]).then(res => {
+                                                window.newPoolInfo = res[0]
+                                                window.OCTBalanceOnRef = res[1]
                                                 window.stNEARBalanceOnRef =
-                                                    stNEAROnRef
-                                                window.stNEARBalance = stNEAR
+                                                    res[2]
+                                                window.stNEARBalance = res[3]
                                                 resolve(false)
                                             })
                                         )
@@ -800,20 +772,22 @@ function getContent(page: number): ReactNode | null {
                                 window.REFRESHER[4] = new Refresh(
                                     () =>
                                         new Promise(resolve =>
-                                            getNewFarmingStake().then(
-                                                async res => {
-                                                    window.newFarmingStake = res
-                                                    const newPoolInfo =
-                                                        await getNewPoolInfo()
-                                                    resolve(
-                                                        BigInt(res) ===
-                                                            BigInt(0) &&
-                                                            BigInt(
-                                                                newPoolInfo.user_shares
-                                                            ) <= BigInt(1)
-                                                    )
-                                                }
-                                            )
+                                            Promise.all([
+                                                getNewFarmingStake(),
+                                                getNewPoolInfo()
+                                            ]).then(res => {
+                                                window.newFarmingStake = res[0]
+                                                window.newPoolInfo = res[1]
+                                                resolve(
+                                                    BigInt(
+                                                        window.newFarmingStake
+                                                    ) === BigInt(0) &&
+                                                        BigInt(
+                                                            window.newPoolInfo
+                                                                .user_shares
+                                                        ) <= BigInt(1)
+                                                )
+                                            })
                                         ),
                                     0
                                 )
@@ -879,33 +853,28 @@ function getContent(page: number): ReactNode | null {
             if (window.REFRESHER[6] === undefined)
                 window.REFRESHER[6] = new Refresh(
                     () =>
-                        new Promise(async resolve => {
-                            const [
-                                oldPosition,
-                                wNEARBalanceOnRef,
-                                stNEARBalanceOnRef,
-                                OCTBalanceOnRef,
-                                stNEARBalance,
-                                newPoolInfo,
-                                newFarmingStake
-                            ] = await Promise.all([
+                        new Promise(resolve =>
+                            Promise.all([
                                 getOldPosition(),
                                 getWnearBalanceOnRef(),
                                 getStnearBalanceOnRef(),
                                 getOctBalanceOnRef(),
                                 getStnearBalance(),
+                                getNativeNearBalance(),
                                 getNewPoolInfo(),
                                 getNewFarmingStake()
-                            ])
-                            window.oldPosition = oldPosition
-                            window.wNEARBalanceOnRef = wNEARBalanceOnRef
-                            window.stNEARBalanceOnRef = stNEARBalanceOnRef
-                            window.OCTBalanceOnRef = OCTBalanceOnRef
-                            window.stNEARBalance = stNEARBalance
-                            window.newPoolInfo = newPoolInfo
-                            window.newFarmingStake = newFarmingStake
-                            resolve(true)
-                        }),
+                            ]).then(res => {
+                                window.oldPosition = res[0]
+                                window.wNEARBalanceOnRef = res[1]
+                                window.stNEARBalanceOnRef = res[2]
+                                window.OCTBalanceOnRef = res[3]
+                                window.stNEARBalance = res[4]
+                                window.nativeNEARBalance = res[5]
+                                window.newPoolInfo = res[6]
+                                window.newFarmingStake = res[7]
+                                resolve(true)
+                            })
+                        ),
                     0
                 )
             const rows = [
@@ -943,6 +912,13 @@ function getContent(page: number): ReactNode | null {
                 },
                 {
                     location: "NEAR wallet",
+                    link: `https://wallet.near.org/`,
+                    amount: window?.nativeNEARBalance,
+                    unit: "NEAR",
+                    noline: true
+                },
+                {
+                    location: "",
                     link: `https://wallet.near.org/`,
                     amount: window?.stNEARBalance,
                     unit: "stNEAR"

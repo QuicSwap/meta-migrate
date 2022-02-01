@@ -8,7 +8,12 @@ export default function PaperComponent() {
         <Paper
             sx={{
                 width: 1,
-                height: 1
+                height: "fit-content",
+                minHeight: 1,
+                display: "flex",
+                "& > *": {
+                    height: "unset !important"
+                }
             }}
             elevation={2}
         >

@@ -35,6 +35,7 @@ declare global {
         OCTBalanceOnRef: string
         stNEARBalanceOnRef: string
         stNEARBalance: string
+        nativeNEARBalance: string
     }
 }
 
@@ -144,7 +145,7 @@ async function exitOldPosition(
     user_total_shares: string,
     min_amounts: string[]
 ): Promise<void> {
-    const preTXs: Promise<nearAPI.transactions.Transaction[]>[] = [];
+    const preTXs: Promise<nearAPI.transactions.Transaction[]>[] = []
 
     // if user has LP shares on farm, unstake them
     if (BigInt(staked_amount) > BigInt("0")) {
@@ -425,12 +426,14 @@ async function getWnearBalanceOnRef(): Promise<string> {
 
 // get user native NEAR balance
 async function getNativeNearBalance(): Promise<string> {
-    const accountBalance = await window.account.getAccountBalance();
-    return accountBalance.available;
+    const accountBalance = await window.account.getAccountBalance()
+    return accountBalance.available
 }
 
 // withdraw wNEAR from Ref account and unwrap it
-async function wnearToNear(wnear_amount: string): Promise<nearAPI.transactions.Transaction[]> {
+async function wnearToNear(
+    wnear_amount: string
+): Promise<nearAPI.transactions.Transaction[]> {
     const wNearActions_1: nearAPI.transactions.Action[] = []
     const refActions: nearAPI.transactions.Action[] = []
     const wNearActions_2: nearAPI.transactions.Action[] = []
@@ -497,16 +500,16 @@ async function wnearToNear(wnear_amount: string): Promise<nearAPI.transactions.T
         )
     )
 
-    const preTXs: Promise<nearAPI.transactions.Transaction>[] = [];
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
 
     if (wNearActions_1.length > 0) {
         preTXs.push(
             makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions_1)
-        );
+        )
     }
     preTXs.push(
         makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions)
-    );
+    )
     preTXs.push(
         makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions_2)
     )
@@ -530,7 +533,10 @@ async function nearToStnear(near_amount: string): Promise<void> {
         )
     )
 
-    const TX = await makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
+    const TX = await makeTransaction(
+        window.nearConfig.ADDRESS_METAPOOL,
+        metapoolActions
+    )
 
     window.walletAccount.requestSignTransactions({
         transactions: [TX]
@@ -732,6 +738,7 @@ export {
     getNativeNearBalance,
     getMetapoolInfo,
     addLiquidity,
+    nearToStnear,
     OLD_POOL_ID,
     NEW_POOL_ID
 }
