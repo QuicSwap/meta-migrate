@@ -420,11 +420,10 @@ async function getWnearBalanceOnRef(): Promise<string> {
         : "0"
 }
 
-// withdraw and unwrap wNEAR on Ref-finance
-async function wnearToStnear(wnear_amount: string): Promise<void> {
+// withdraw wNEAR from Ref account and unwrap it
+async function wnearToNear(wnear_amount: string): Promise<void> {
     const refActions: nearAPI.transactions.Action[] = []
     const wNearActions: nearAPI.transactions.Action[] = []
-    const metapoolActions: nearAPI.transactions.Action[] = []
 
     // query user storage balance on wNEAR contract
     const refStorage: any = await window.account.viewFunction(
@@ -488,6 +487,20 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
         )
     )
 
+    const TXs = await Promise.all([
+        makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions),
+        makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions),
+    ])
+
+    window.walletAccount.requestSignTransactions({
+        transactions: TXs
+    })
+}
+
+// stake NEAR with metapool to get stNEAR
+async function nearToStnear(near_amount: string): Promise<void> {
+    const metapoolActions: nearAPI.transactions.Action[] = []
+
     // deposit NEAR to metapool
     metapoolActions.push(
         nearAPI.transactions.functionCall(
@@ -498,14 +511,10 @@ async function wnearToStnear(wnear_amount: string): Promise<void> {
         )
     )
 
-    const TXs = await Promise.all([
-        makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions),
-        makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions),
-        makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
-    ])
+    const TX = await makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
 
     window.walletAccount.requestSignTransactions({
-        transactions: TXs
+        transactions: [TX]
     })
 }
 
@@ -701,7 +710,8 @@ export {
     getOctBalanceOnRef,
     getStnearBalanceOnRef,
     getStnearBalance,
-    wnearToStnear,
+    wnearToNear,
+    nearToStnear,
     getMetapoolInfo,
     addLiquidity,
     OLD_POOL_ID,
