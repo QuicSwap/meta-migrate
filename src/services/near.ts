@@ -420,6 +420,12 @@ async function getWnearBalanceOnRef(): Promise<string> {
         : "0"
 }
 
+// get user native NEAR balance
+async function getNativeNearBalance(): Promise<string> {
+    const accountBalance = await window.account.getAccountBalance();
+    return accountBalance.available;
+}
+
 // withdraw wNEAR from Ref account and unwrap it
 async function wnearToNear(wnear_amount: string): Promise<void> {
     const refActions: nearAPI.transactions.Action[] = []
@@ -710,6 +716,7 @@ export {
     getOctBalanceOnRef,
     getStnearBalanceOnRef,
     getStnearBalance,
+    getNativeNearBalance,
     wnearToNear,
     nearToStnear,
     getMetapoolInfo,
