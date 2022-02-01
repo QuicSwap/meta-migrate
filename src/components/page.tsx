@@ -219,7 +219,8 @@ function getContent(page: number): ReactNode | null {
                                 Unstake your LP shares from the OCT {"<->"}{" "}
                                 wNEAR farm and remove liquidity from the OCT{" "}
                                 {"<->"} wNEAR pool to receive OCT and wNEAR
-                                tokens. Your wNEAR will be withdrawn and unwrapped automatically.
+                                tokens. Your wNEAR will be withdrawn and
+                                unwrapped automatically.
                                 <Seperate />
                                 You have a total of {""}
                                 <span>
@@ -264,7 +265,7 @@ function getContent(page: number): ReactNode | null {
                                     </Purple>
                                     {""} $NEAR.
                                 </span>
-                                <Break/>
+                                <Break />
                                 <Note>Execution might take a while.</Note>
                             </Description>
                         }
