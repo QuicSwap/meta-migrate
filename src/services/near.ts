@@ -507,7 +507,7 @@ async function nearToStnear(near_amount: string): Promise<void> {
             "deposit_and_stake",
             {},
             50_000_000_000_000,
-            wnear_amount
+            near_amount
         )
     )
 
