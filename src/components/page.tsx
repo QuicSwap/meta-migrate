@@ -211,7 +211,7 @@ function getContent(page: number): ReactNode | null {
         case 0:
             return (
                 <>
-                    <TitleComponent title="Exit OCT <-> wNEAR" />
+                    <TitleComponent title="Exit OCT <-> wNEAR" step={1}/>
                     <StepComponent
                         title={"Unstake & remove liquidity."}
                         description={
@@ -219,7 +219,8 @@ function getContent(page: number): ReactNode | null {
                                 Unstake your LP shares from the OCT {"<->"}{" "}
                                 wNEAR farm and remove liquidity from the OCT{" "}
                                 {"<->"} wNEAR pool to receive OCT and wNEAR
-                                tokens. Your wNEAR will be withdrawn and unwrapped automatically.
+                                tokens. Your wNEAR will be withdrawn and
+                                unwrapped automatically.
                                 <Seperate />
                                 You have a total of {""}
                                 <span>
@@ -264,7 +265,7 @@ function getContent(page: number): ReactNode | null {
                                     </Purple>
                                     {""} $NEAR.
                                 </span>
-                                <Break/>
+                                <Break />
                                 <Note>Execution might take a while.</Note>
                             </Description>
                         }
@@ -313,7 +314,7 @@ function getContent(page: number): ReactNode | null {
         case 1:
             return (
                 <>
-                    <TitleComponent title="NEAR -> stNEAR" />
+                    <TitleComponent title="NEAR -> stNEAR" step={2}/>
                     <StepComponent
                         title={"Stake NEAR."}
                         description={
@@ -464,7 +465,7 @@ function getContent(page: number): ReactNode | null {
         case 2:
             return (
                 <>
-                    <TitleComponent title="Enter OCT <-> stNEAR" />
+                    <TitleComponent title="Enter OCT <-> stNEAR" step={3} />
                     <StepComponent
                         title="1. Add liquidity to the OCT <-> stNEAR pool."
                         description={

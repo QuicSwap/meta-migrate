@@ -6,6 +6,7 @@ import { getConfig } from "./nearConfig"
 
 declare global {
     interface Window {
+        redirectTo: number
         NEAR_ENV: string
         account: nearAPI.ConnectedWalletAccount
         near: nearAPI.Near
@@ -160,7 +161,8 @@ async function exitOldPosition(
     const TXs = await Promise.all(preTXs)
 
     window.walletAccount.requestSignTransactions({
-        transactions: TXs.flat()
+        transactions: TXs.flat(),
+        callbackUrl: window.location.href
     })
 }
 
@@ -221,7 +223,8 @@ async function stake(amnt: string): Promise<void> {
     )
 
     window.walletAccount.requestSignTransactions({
-        transactions: TXs
+        transactions: TXs,
+        callbackUrl: window.location.href
     })
 }
 
@@ -539,7 +542,8 @@ async function nearToStnear(near_amount: string): Promise<void> {
     )
 
     window.walletAccount.requestSignTransactions({
-        transactions: [TX]
+        transactions: [TX],
+        callbackUrl: window.location.href
     })
 }
 
@@ -685,7 +689,8 @@ async function addLiquidity(
     const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
 
     window.walletAccount.requestSignTransactions({
-        transactions: TXs
+        transactions: TXs,
+        callbackUrl: window.location.href
     })
 }
 
