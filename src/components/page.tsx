@@ -211,7 +211,7 @@ function getContent(page: number): ReactNode | null {
         case 0:
             return (
                 <>
-                    <TitleComponent title="Exit OCT <-> wNEAR" step={1}/>
+                    <TitleComponent title="Exit OCT <-> wNEAR" step={1} />
                     <StepComponent
                         title={"Unstake & remove liquidity."}
                         description={
@@ -314,7 +314,7 @@ function getContent(page: number): ReactNode | null {
         case 1:
             return (
                 <>
-                    <TitleComponent title="NEAR -> stNEAR" step={2}/>
+                    <TitleComponent title="NEAR -> stNEAR" step={2} />
                     <StepComponent
                         title={"Stake NEAR."}
                         description={
@@ -566,10 +566,22 @@ function getContent(page: number): ReactNode | null {
                                     }}
                                     default={
                                         inputValuesUnmatched[1] ??
-                                        utils.format.formatNearAmount(
-                                            (localStorage.getItem(
-                                                "OCTminAmountOut"
-                                            ) ?? "0") + "000000"
+                                        [
+                                            utils.format.formatNearAmount(
+                                                (localStorage.getItem(
+                                                    "OCTminAmountOut"
+                                                ) ?? "0") + "000000"
+                                            ),
+                                            ...(window.OCTBalanceOnRef !== undefined
+                                                ? [
+                                                      utils.format.formatNearAmount(
+                                                          window.OCTBalanceOnRef +
+                                                              "000000"
+                                                      )
+                                                  ]
+                                                : [])
+                                        ].reduce((a: string, b: string) =>
+                                            BigInt(a) < BigInt(b) ? a : b
                                         )
                                     }
                                 />
@@ -651,13 +663,23 @@ function getContent(page: number): ReactNode | null {
                                                           inputValuesUnmatched[2] =
                                                               (
                                                                   parseFloat(
-                                                                      utils.format.formatNearAmount(
-                                                                          localStorage.getItem(
-                                                                              "OCTminAmountOut"
-                                                                          ) +
-                                                                              "000000" ??
-                                                                              "0"
-                                                                      )
+                                                                    [
+                                                                        utils.format.formatNearAmount(
+                                                                            (localStorage.getItem(
+                                                                                "OCTminAmountOut"
+                                                                            ) ?? "0") + "000000"
+                                                                        ),
+                                                                        ...(window.OCTBalanceOnRef !== undefined
+                                                                            ? [
+                                                                                  utils.format.formatNearAmount(
+                                                                                      window.OCTBalanceOnRef +
+                                                                                          "000000"
+                                                                                  )
+                                                                              ]
+                                                                            : [])
+                                                                    ].reduce((a: string, b: string) =>
+                                                                        BigInt(a) < BigInt(b) ? a : b
+                                                                    )
                                                                   ) /
                                                                   (Number(
                                                                       (BigInt(

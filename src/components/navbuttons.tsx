@@ -14,7 +14,7 @@ export default function NavButtonComponent(props: {
                 width: 0.9,
                 display: "flex",
                 justifyContent: (props.next ? !props.back : props.back)
-                    ? "center"
+                    ? "space-between"
                     : "space-between"
             }}
         >
@@ -28,7 +28,7 @@ export default function NavButtonComponent(props: {
                     BACK
                 </Button>
             ) : (
-                <></>
+                <div></div>
             )}
             {props.next ? (
                 <Button
@@ -40,7 +40,7 @@ export default function NavButtonComponent(props: {
                     NEXT
                 </Button>
             ) : (
-                <></>
+                <div></div>
             )}
         </Grid>
     )

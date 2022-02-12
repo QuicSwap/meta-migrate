@@ -31,6 +31,7 @@ export default function StepComponent(props: {
             sx={{
                 bgcolor: "background.default",
                 borderRadius: "8px",
+                position: "relative",
                 flex: 1,
                 mb: 4,
                 ...props.sx
@@ -48,7 +49,10 @@ export default function StepComponent(props: {
                 <Button
                     variant="contained"
                     sx={{
-                        borderRadius: "100px"
+                        borderRadius: "100px",
+                        position: "absolute",
+                        bottom: "-68px",
+                        right: "calc(5% + 100px + 2px)"
                     }}
                     disabled={completed !== false || props.denied}
                     onClick={props?.action}

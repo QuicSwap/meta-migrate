@@ -8,12 +8,12 @@ export default function TitleComponent(props: {
 }) {
     const theme = useTheme() as any
     return (
-        <Grid 
-            item 
+        <Grid
+            item
             xs={1}
             sx={{
                 display: "flex",
-                alignItems: "center",
+                alignItems: "center"
             }}
         >
             {props.step !== undefined ? (
