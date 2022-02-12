@@ -37,6 +37,7 @@ declare global {
         stNEARBalanceOnRef: string
         stNEARBalance: string
         nativeNEARBalance: string
+        lpSharesToStake: string
     }
 }
 
@@ -654,7 +655,7 @@ async function addLiquidity(
 
     // set slippage protection to 0.1%
     const min_lp_amounts: string[] = lp_amounts.map(amount => {
-        return (BigInt(amount) * BigInt('999') / BigInt('1000')).toString()
+        return ((BigInt(amount) * BigInt("999")) / BigInt("1000")).toString()
     })
 
     // add liquidity to $OCT <-> $stNEAR
@@ -697,11 +698,11 @@ async function addLiquidity(
 
 // estimate LP shares you get for supplying amounts
 // see https://github.com/ref-finance/ref-contracts/blob/3c04fd20767ad7f1c383deee8e0a2b5ab47fbc18/ref-exchange/src/simple_pool.rs#L118
-async function calcLpSharesFromAmounts(
+function calcLpSharesFromAmounts(
     pool_total_shares: string,
     pool_amounts: string[],
     lp_amounts: string[]
-): Promise<string> {
+): string {
     let lp_shares_estimate: string = pool_amounts.reduce(
         (prevValue, poolAmt, index) => {
             let currValue =

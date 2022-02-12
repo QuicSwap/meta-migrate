@@ -16,7 +16,6 @@ import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode, useReducer } from "react"
 import {
-    addLiquidity,
     getMetapoolInfo,
     getNewFarmingStake,
     getNewPoolInfo,
@@ -27,10 +26,11 @@ import {
     getWnearBalanceOnRef,
     getOldPosition,
     exitOldPosition,
-    stake,
     nearToStnear,
     OLD_POOL_ID,
-    NEW_POOL_ID
+    NEW_POOL_ID,
+    addLiquidityAndStake,
+    calcLpSharesFromAmounts
 } from "../services/near"
 import { Refresh } from "../utils/refresh"
 import NavButtonComponent from "./navbuttons"
@@ -331,7 +331,9 @@ function getContent(page: number): ReactNode | null {
                                                           window.nativeNEARBalance
                                                       )
                                                       .toString()
-                                              ).toFixed(3)
+                                              )
+                                                  .toFixed(5)
+                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR in your wallet.
@@ -463,11 +465,25 @@ function getContent(page: number): ReactNode | null {
             )
 
         case 2:
+            window.lpSharesToStake = window.newPoolInfo
+                ? calcLpSharesFromAmounts(
+                      window.newPoolInfo.total_shares,
+                      window.newPoolInfo.amounts,
+                      [
+                          utils.format.parseNearAmount(inputValues[2])!,
+                          (
+                              BigInt(
+                                  utils.format.parseNearAmount(inputValues[1])!
+                              ) / BigInt("1000000")
+                          ).toString()
+                      ]
+                  )
+                : "..."
             return (
                 <>
                     <TitleComponent title="Enter OCT <-> stNEAR" step={3} />
                     <StepComponent
-                        title="1. Add liquidity to the OCT <-> stNEAR pool."
+                        title={"Provide liquidity & farm."}
                         description={
                             <Description>
                                 <Break />
@@ -480,7 +496,9 @@ function getContent(page: number): ReactNode | null {
                                                       window.OCTBalanceOnRef +
                                                           "000000"
                                                   )
-                                              ).toFixed(3)
+                                              )
+                                                  .toFixed(5)
+                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $OCT
@@ -501,7 +519,9 @@ function getContent(page: number): ReactNode | null {
                                                           )
                                                       ).toString()
                                                   )
-                                              ).toFixed(3)
+                                              )
+                                                  .toFixed(5)
+                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $stNEAR.
@@ -561,28 +581,32 @@ function getContent(page: number): ReactNode | null {
                                                         )
                                                 ) /
                                                     10000000000)
-                                            ).toString() // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
+                                            ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
                                         }
                                     }}
                                     default={
                                         inputValuesUnmatched[1] ??
-                                        [
+                                        parseFloat(
                                             utils.format.formatNearAmount(
-                                                (localStorage.getItem(
-                                                    "OCTminAmountOut"
-                                                ) ?? "0") + "000000"
-                                            ),
-                                            ...(window.OCTBalanceOnRef !== undefined
-                                                ? [
-                                                      utils.format.formatNearAmount(
-                                                          window.OCTBalanceOnRef +
-                                                              "000000"
-                                                      )
-                                                  ]
-                                                : [])
-                                        ].reduce((a: string, b: string) =>
-                                            BigInt(a) < BigInt(b) ? a : b
-                                        )
+                                                [
+                                                    (localStorage.getItem(
+                                                        "OCTminAmountOut"
+                                                    ) ?? "0") + "000000",
+                                                    ...(window.OCTBalanceOnRef !==
+                                                    undefined
+                                                        ? [
+                                                              window.OCTBalanceOnRef +
+                                                                  "000000"
+                                                          ]
+                                                        : [])
+                                                ].reduce(
+                                                    (a: string, b: string) =>
+                                                        BigInt(a) < BigInt(b)
+                                                            ? a
+                                                            : b
+                                                )
+                                            )
+                                        ).toFixed(5)
                                     }
                                 />
                                 <Icon sx={{ alignSelf: "center" }}>link</Icon>
@@ -648,7 +672,7 @@ function getContent(page: number): ReactNode | null {
                                                             )
                                                     )) /
                                                 10000000000
-                                            ).toString() // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
+                                            ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
                                         }
                                     }}
                                     default={
@@ -663,23 +687,35 @@ function getContent(page: number): ReactNode | null {
                                                           inputValuesUnmatched[2] =
                                                               (
                                                                   parseFloat(
-                                                                    [
-                                                                        utils.format.formatNearAmount(
-                                                                            (localStorage.getItem(
-                                                                                "OCTminAmountOut"
-                                                                            ) ?? "0") + "000000"
-                                                                        ),
-                                                                        ...(window.OCTBalanceOnRef !== undefined
-                                                                            ? [
-                                                                                  utils.format.formatNearAmount(
-                                                                                      window.OCTBalanceOnRef +
-                                                                                          "000000"
+                                                                      utils.format.formatNearAmount(
+                                                                          [
+                                                                              (localStorage.getItem(
+                                                                                  "OCTminAmountOut"
+                                                                              ) ??
+                                                                                  "0") +
+                                                                                  "000000",
+                                                                              ...(window.OCTBalanceOnRef !==
+                                                                              undefined
+                                                                                  ? [
+                                                                                        window.OCTBalanceOnRef +
+                                                                                            "000000"
+                                                                                    ]
+                                                                                  : [])
+                                                                          ].reduce(
+                                                                              (
+                                                                                  a: string,
+                                                                                  b: string
+                                                                              ) =>
+                                                                                  BigInt(
+                                                                                      a
+                                                                                  ) <
+                                                                                  BigInt(
+                                                                                      b
                                                                                   )
-                                                                              ]
-                                                                            : [])
-                                                                    ].reduce((a: string, b: string) =>
-                                                                        BigInt(a) < BigInt(b) ? a : b
-                                                                    )
+                                                                                      ? a
+                                                                                      : b
+                                                                          )
+                                                                      )
                                                                   ) /
                                                                   (Number(
                                                                       (BigInt(
@@ -700,7 +736,7 @@ function getContent(page: number): ReactNode | null {
                                                                           )
                                                                   ) /
                                                                       10000000000)
-                                                              ).toString()
+                                                              ).toFixed(5)
                                                           updatePage()
                                                       }
                                                   )
@@ -708,9 +744,27 @@ function getContent(page: number): ReactNode | null {
                                               })())
                                     }
                                 />
+                                <Break />
+                                {"\u2248"}{" "}
+                                <span>
+                                    <Purple>
+                                        {window.newPoolInfo
+                                            ? parseFloat(
+                                                  utils.format.formatNearAmount(
+                                                      window.lpSharesToStake
+                                                  )
+                                              ).toFixed(3)
+                                            : "..."}
+                                    </Purple>
+                                    {""} LP shares. {""}
+                                </span>
+                                <Warning>
+                                    Temporarily disabled, waiting for OCT{" "}
+                                    {"<->"} stNEAR farm.
+                                </Warning>
                             </Description>
                         }
-                        denied={inputErrors[1] || inputErrors[2]}
+                        denied={true || inputErrors[1] || inputErrors[2]}
                         completed={
                             window.REFRESHER[3] ??
                             (() => {
@@ -736,7 +790,7 @@ function getContent(page: number): ReactNode | null {
                             })()
                         }
                         action={() => {
-                            addLiquidity(
+                            addLiquidityAndStake(
                                 (
                                     BigInt(
                                         utils.format.parseNearAmount(
@@ -755,85 +809,18 @@ function getContent(page: number): ReactNode | null {
                                             )!
                                         ) / BigInt("1000000")
                                     ).toString()
-                                ]
+                                ],
+                                window.lpSharesToStake
                             )
                         }}
-                    />
-                    <StepComponent
-                        title="2. Stake on the OCT <-> stNEAR farm."
-                        description={
-                            <Description>
-                                <Break />
-                                You have {""}
-                                <span>
-                                    <Purple>
-                                        {window.newPoolInfo
-                                            ? parseFloat(
-                                                  utils.format
-                                                      .formatNearAmount(
-                                                          window.newPoolInfo
-                                                              .user_shares
-                                                      )
-                                                      .toString()
-                                              ).toFixed(3)
-                                            : "..."}
-                                    </Purple>
-                                    {""} LP tokens {""}
-                                </span>
-                                in the OCT {"<->"} stNEAR pool.
-                                <Warning>
-                                    Temporarily disabled, waiting for OCT{" "}
-                                    {"<->"} stNEAR farm.
-                                </Warning>
-                            </Description>
-                        }
-                        // TEMP
-                        denied={true}
-                        completed={
-                            window.REFRESHER[4] ??
-                            (() => {
-                                window.REFRESHER[4] = new Refresh(
-                                    () =>
-                                        new Promise(resolve =>
-                                            Promise.all([
-                                                getNewFarmingStake(),
-                                                getNewPoolInfo()
-                                            ]).then(res => {
-                                                window.newFarmingStake = res[0]
-                                                window.newPoolInfo = res[1]
-                                                resolve(
-                                                    BigInt(
-                                                        window.newFarmingStake
-                                                    ) === BigInt(0) &&
-                                                        BigInt(
-                                                            window.newPoolInfo
-                                                                .user_shares
-                                                        ) <= BigInt(1)
-                                                )
-                                            })
-                                        ),
-                                    0
-                                )
-                                return window.REFRESHER[4]
-                            })()
-                        }
-                        action={() =>
-                            stake(
-                                (
-                                    BigInt(window.newPoolInfo.user_shares) -
-                                    BigInt("1")
-                                ) // leave 1 LP share to occupy storage, https://github.com/ref-finance/ref-contracts/issues/36
-                                    .toString()
-                            )
-                        }
                     />
                     <NavButtonComponent next back />
                 </>
             )
 
         case 3:
-            if (window.REFRESHER[5] === undefined)
-                window.REFRESHER[5] = new Refresh(
+            if (window.REFRESHER[4] === undefined)
+                window.REFRESHER[4] = new Refresh(
                     () =>
                         new Promise(resolve =>
                             getNewFarmingStake().then(res => {
@@ -873,8 +860,8 @@ function getContent(page: number): ReactNode | null {
             )
 
         case 4:
-            if (window.REFRESHER[6] === undefined)
-                window.REFRESHER[6] = new Refresh(
+            if (window.REFRESHER[5] === undefined)
+                window.REFRESHER[5] = new Refresh(
                     () =>
                         new Promise(resolve =>
                             Promise.all([
