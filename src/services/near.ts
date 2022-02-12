@@ -686,15 +686,14 @@ async function addLiquidity(
     return TXs
 }
 
-async function addLiquidityAndStake(
+// estimate LP shares you get for supplying amounts
+// see https://github.com/ref-finance/ref-contracts/blob/3c04fd20767ad7f1c383deee8e0a2b5ab47fbc18/ref-exchange/src/simple_pool.rs#L118
+async function calcLpSharesFromAmounts(
     pool_total_shares: string,
     pool_amounts: string[],
-    amount_stnear: string,
     lp_amounts: string[]
-): Promise<void> {
-    // estimate LP shares you get for supplying amounts
-    // see https://github.com/ref-finance/ref-contracts/blob/3c04fd20767ad7f1c383deee8e0a2b5ab47fbc18/ref-exchange/src/simple_pool.rs#L118
-    const lp_shares_estimate: string = pool_amounts.reduce(
+): Promise<string> {
+    let lp_shares_estimate: string = pool_amounts.reduce(
         (prevValue, poolAmt, index) => {
             let currValue =
                 (BigInt(pool_total_shares) * BigInt(lp_amounts[index])) /
@@ -705,9 +704,26 @@ async function addLiquidityAndStake(
         }
     )
 
+    // set tolerance to 0.01%
+    // !!! important leave at least 1 LP share to occupy storage
+    // see: https://github.com/ref-finance/ref-contracts/issues/36
+    lp_shares_estimate = (
+        (BigInt(lp_shares_estimate) * BigInt("9999")) /
+        BigInt("10000")
+    ).toString()
+
+    return lp_shares_estimate
+}
+
+// action: LP to new pool and stake on farm
+async function addLiquidityAndStake(
+    amount_stnear: string,
+    lp_amounts: string[],
+    lp_shares_to_stake: string
+): Promise<void> {
     const TXs = await Promise.all([
         addLiquidity(amount_stnear, lp_amounts),
-        stake(lp_shares_estimate)
+        stake(lp_shares_to_stake)
     ])
 
     window.walletAccount.requestSignTransactions({
@@ -762,6 +778,7 @@ export {
     getStnearBalance,
     getNativeNearBalance,
     getMetapoolInfo,
+    calcLpSharesFromAmounts,
     addLiquidityAndStake,
     nearToStnear,
     OLD_POOL_ID,
