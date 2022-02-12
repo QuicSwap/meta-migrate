@@ -399,10 +399,13 @@ function getContent(page: number): ReactNode | null {
                                                   (
                                                       Number(
                                                           BigInt(
-                                                              (utils.format.parseNearAmount(
-                                                                  inputValues[0]
-                                                              ) as string) +
-                                                                  "0000"
+                                                              inputErrors[0]
+                                                                  ? "0"
+                                                                  : (utils.format.parseNearAmount(
+                                                                        inputValues[0] ??
+                                                                            "0"
+                                                                    ) as string) +
+                                                                        "0000"
                                                           ) /
                                                               BigInt(
                                                                   window.stNEARPrice
@@ -469,10 +472,16 @@ function getContent(page: number): ReactNode | null {
                       window.newPoolInfo.total_shares,
                       window.newPoolInfo.amounts,
                       [
-                          utils.format.parseNearAmount(inputValues[2])!,
+                          utils.format.parseNearAmount(
+                              inputErrors[2] ? "0" : inputValues[2] ?? "0"
+                          )!,
                           (
                               BigInt(
-                                  utils.format.parseNearAmount(inputValues[1])!
+                                  utils.format.parseNearAmount(
+                                      inputErrors[1]
+                                          ? "0"
+                                          : inputValues[1] ?? "0"
+                                  )!
                               ) / BigInt("1000000")
                           ).toString()
                       ]
