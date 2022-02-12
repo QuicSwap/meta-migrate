@@ -165,7 +165,11 @@ async function exitOldPosition(
 }
 
 // stake farm shares in OCT<>stNEAR farm
-async function stake(amnt: string): Promise<void> {
+async function stake(
+    amnt: string
+): Promise<nearAPI.transactions.Transaction[]> {
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
+
     const storage_balance: any = await window.account.viewFunction(
         window.nearConfig.ADDRESS_REF_FARMING,
         "storage_balance_of",
@@ -203,26 +207,21 @@ async function stake(amnt: string): Promise<void> {
             "1" // one yocto
         )
 
-    const TXs = await Promise.all(
-        storageAction !== undefined
-            ? [
-                  makeTransaction(window.nearConfig.ADDRESS_REF_FARMING, [
-                      storageAction
-                  ]),
-                  makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, [
-                      stakingAction
-                  ])
-              ]
-            : [
-                  makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, [
-                      stakingAction
-                  ])
-              ]
+    if (storageAction !== undefined) {
+        preTXs.push(
+            makeTransaction(window.nearConfig.ADDRESS_REF_FARMING, [
+                storageAction
+            ])
+        )
+    }
+
+    preTXs.push(
+        makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, [stakingAction])
     )
 
-    window.walletAccount.requestSignTransactions({
-        transactions: TXs
-    })
+    const TXs = await Promise.all(preTXs)
+
+    return TXs
 }
 
 // unstake farm shares from OCT<>wNEAR farm
@@ -601,7 +600,7 @@ async function getOctBalanceOnRef(): Promise<string> {
 async function addLiquidity(
     amount_stnear: string,
     lp_amounts: string[]
-): Promise<void> {
+): Promise<nearAPI.transactions.Transaction[]> {
     const metapoolActions: nearAPI.transactions.Action[] = []
     // use this to increase storage balance on ref before depositing stNEAR
     const refActions_1: nearAPI.transactions.Action[] = []
@@ -665,7 +664,7 @@ async function addLiquidity(
         )
     )
 
-    const preTXs: any = []
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
     if (refActions_1.length > 0) {
         preTXs.push(
             makeTransaction(
@@ -684,8 +683,35 @@ async function addLiquidity(
     )
     const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
 
+    return TXs
+}
+
+async function addLiquidityAndStake(
+    pool_total_shares: string,
+    pool_amounts: string[],
+    amount_stnear: string,
+    lp_amounts: string[]
+): Promise<void> {
+    // estimate LP shares you get for supplying amounts
+    // see https://github.com/ref-finance/ref-contracts/blob/3c04fd20767ad7f1c383deee8e0a2b5ab47fbc18/ref-exchange/src/simple_pool.rs#L118
+    const lp_shares_estimate: string = pool_amounts.reduce(
+        (prevValue, poolAmt, index) => {
+            let currValue =
+                (BigInt(pool_total_shares) * BigInt(lp_amounts[index])) /
+                BigInt(poolAmt)
+            return BigInt(prevValue) < currValue
+                ? prevValue
+                : currValue.toString()
+        }
+    )
+
+    const TXs = await Promise.all([
+        addLiquidity(amount_stnear, lp_amounts),
+        stake(lp_shares_estimate)
+    ])
+
     window.walletAccount.requestSignTransactions({
-        transactions: TXs
+        transactions: TXs.flat()
     })
 }
 
@@ -729,7 +755,6 @@ export {
     getOldPosition,
     exitOldPosition,
     getNewFarmingStake,
-    stake,
     getNewPoolInfo,
     getWnearBalanceOnRef,
     getOctBalanceOnRef,
@@ -737,7 +762,7 @@ export {
     getStnearBalance,
     getNativeNearBalance,
     getMetapoolInfo,
-    addLiquidity,
+    addLiquidityAndStake,
     nearToStnear,
     OLD_POOL_ID,
     NEW_POOL_ID
