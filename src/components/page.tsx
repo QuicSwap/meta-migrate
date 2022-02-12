@@ -206,6 +206,9 @@ const Input = (props: {
     )
 }
 
+const parseFloatFloorFixed = (str: string, acc: number = 4) =>
+    (Math.floor(parseFloat(str) * 10 ** acc) / 10 ** acc).toFixed(acc)
+
 function getContent(page: number): ReactNode | null {
     switch (page) {
         case 0:
@@ -325,15 +328,11 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.nativeNEARBalance
-                                            ? parseFloat(
-                                                  utils.format
-                                                      .formatNearAmount(
-                                                          window.nativeNEARBalance
-                                                      )
-                                                      .toString()
+                                            ? parseFloatFloorFixed(
+                                                  utils.format.formatNearAmount(
+                                                      window.nativeNEARBalance
+                                                  )
                                               )
-                                                  .toFixed(5)
-                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR in your wallet.
@@ -376,11 +375,11 @@ function getContent(page: number): ReactNode | null {
                                                     BigInt(
                                                         window.nativeNEARBalance
                                                     ),
-                                            msg: `Insufficient funds. You only have ${parseFloat(
+                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
                                                 utils.format.formatNearAmount(
                                                     window.nativeNEARBalance
                                                 )
-                                            ).toFixed(3)} $NEAR in your wallet.`
+                                            )} $NEAR in your wallet.`
                                         }
                                     ]}
                                     default={
@@ -491,14 +490,12 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.OCTBalanceOnRef !== undefined
-                                            ? parseFloat(
+                                            ? parseFloatFloorFixed(
                                                   utils.format.formatNearAmount(
                                                       window.OCTBalanceOnRef +
                                                           "000000"
                                                   )
                                               )
-                                                  .toFixed(5)
-                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $OCT
@@ -508,7 +505,7 @@ function getContent(page: number): ReactNode | null {
                                     <Purple>
                                         {window.stNEARBalance !== undefined &&
                                         window.stNEARBalanceOnRef !== undefined
-                                            ? parseFloat(
+                                            ? parseFloatFloorFixed(
                                                   utils.format.formatNearAmount(
                                                       (
                                                           BigInt(
@@ -520,8 +517,6 @@ function getContent(page: number): ReactNode | null {
                                                       ).toString()
                                                   )
                                               )
-                                                  .toFixed(5)
-                                                  .slice(0, -1)
                                             : "..."}
                                     </Purple>
                                     {""} $stNEAR.
@@ -550,12 +545,12 @@ function getContent(page: number): ReactNode | null {
                                             msg: `Insufficient funds. You only have ${
                                                 window.OCTBalanceOnRef !==
                                                 undefined
-                                                    ? parseFloat(
+                                                    ? parseFloatFloorFixed(
                                                           utils.format.formatNearAmount(
                                                               window.OCTBalanceOnRef +
                                                                   "000000"
                                                           )
-                                                      ).toFixed(3)
+                                                      )
                                                     : "..."
                                             } $OCT on Ref-finance.`
                                         }
@@ -634,7 +629,7 @@ function getContent(page: number): ReactNode | null {
                                                         BigInt(
                                                             window.stNEARBalance
                                                         ),
-                                            msg: `Insufficient funds. You only have ${parseFloat(
+                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
                                                 utils.format.formatNearAmount(
                                                     (
                                                         BigInt(
@@ -647,7 +642,7 @@ function getContent(page: number): ReactNode | null {
                                                         )
                                                     ).toString()
                                                 )
-                                            ).toFixed(3)} stNEAR in total.`
+                                            )} stNEAR in total.`
                                         }
                                     ]}
                                     onChange={(value: string) => {
