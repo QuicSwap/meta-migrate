@@ -649,6 +649,11 @@ async function addLiquidity(
         )
     }
 
+    // set slippage protection to 0.1%
+    const min_lp_amounts: string[] = lp_amounts.map(amount => {
+        return (BigInt(amount) * BigInt('999') / BigInt('1000')).toString()
+    })
+
     // add liquidity to $OCT <-> $stNEAR
     // no need to check for storage as storage deposit
     // is take from attached deposit for this action
@@ -657,7 +662,8 @@ async function addLiquidity(
             "add_liquidity",
             {
                 pool_id: NEW_POOL_ID,
-                amounts: lp_amounts
+                amounts: lp_amounts,
+                min_amounts: min_lp_amounts
             },
             100_000_000_000_000,
             LP_STORAGE_AMOUNT
