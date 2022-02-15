@@ -762,13 +762,9 @@ function getContent(page: number): ReactNode | null {
                                     </Purple>
                                     {""} LP shares. {""}
                                 </span>
-                                <Warning>
-                                    Temporarily disabled, waiting for OCT{" "}
-                                    {"<->"} stNEAR farm.
-                                </Warning>
                             </Description>
                         }
-                        denied={true || inputErrors[1] || inputErrors[2]}
+                        denied={inputErrors[1] || inputErrors[2]}
                         completed={
                             window.REFRESHER[3] ??
                             (() => {

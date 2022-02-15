@@ -202,7 +202,7 @@ async function stake(
             "mft_transfer_call",
             {
                 receiver_id: window.nearConfig.ADDRESS_REF_FARMING,
-                token_id: `${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`,
+                token_id: `:${NEW_POOL_ID}`,
                 amount: amnt,
                 msg: ""
             },
