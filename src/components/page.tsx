@@ -42,6 +42,26 @@ const inputValues: string[] = []
 const inputValuesUnmatched: string[] = []
 const inputErrors: boolean[] = []
 
+const bigMin = (arr: string[]): string =>
+    arr.reduce((a: string, b: string) => (BigInt(a) < BigInt(b) ? a : b))
+
+const getMaxInvest = (available: string[], poolAmts: string[]): string[] => [
+    bigMin([
+        available[0],
+        (
+            (BigInt(available[1]) * BigInt(poolAmts[0])) /
+            BigInt(poolAmts[1])
+        ).toString()
+    ]),
+    bigMin([
+        available[1],
+        (
+            (BigInt(available[0]) * BigInt(poolAmts[1])) /
+            BigInt(poolAmts[0])
+        ).toString()
+    ])
+]
+
 const setInputValues = (
     id: number,
     val: string,
@@ -62,6 +82,9 @@ const setInputErrors = (
     pattern?: string,
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
 ) => {
+    if (inputValuesUnmatched[id] === undefined)
+        return;
+
     const error =
         (pattern !== undefined &&
             inputValuesUnmatched[id].match(pattern) === null) ||
@@ -176,6 +199,9 @@ const Input = (props: {
                     : {
                           pattern: props.pattern
                       })
+            }}
+            InputLabelProps={{
+                shrink: true
             }}
             value={inputValuesUnmatched[props.id]}
             error={inputErrors[props.id]}
@@ -467,6 +493,18 @@ function getContent(page: number): ReactNode | null {
             )
 
         case 2:
+            if (window.newPoolInfo !== undefined) {
+                const values = getMaxInvest(
+                    [(BigInt(window.stNEARBalanceOnRef) + BigInt(window.stNEARBalance)).toString(), window.OCTBalanceOnRef],
+                    window.newPoolInfo.amounts
+                )
+                inputValuesUnmatched[1] = inputValuesUnmatched[1] ?? parseFloatFloorFixed(
+                    utils.format.formatNearAmount(values[1] + "000000"), 5
+                )
+                inputValuesUnmatched[2] = inputValuesUnmatched[2] ?? parseFloatFloorFixed(
+                    utils.format.formatNearAmount(values[0]), 5
+                )
+            }
             window.lpSharesToStake = window.newPoolInfo
                 ? calcLpSharesFromAmounts(
                       window.newPoolInfo.total_shares,
@@ -588,30 +626,7 @@ function getContent(page: number): ReactNode | null {
                                             ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
                                         }
                                     }}
-                                    default={
-                                        inputValuesUnmatched[1] ??
-                                        parseFloat(
-                                            utils.format.formatNearAmount(
-                                                [
-                                                    (localStorage.getItem(
-                                                        "OCTminAmountOut"
-                                                    ) ?? "0") + "000000",
-                                                    ...(window.OCTBalanceOnRef !==
-                                                    undefined
-                                                        ? [
-                                                              window.OCTBalanceOnRef +
-                                                                  "000000"
-                                                          ]
-                                                        : [])
-                                                ].reduce(
-                                                    (a: string, b: string) =>
-                                                        BigInt(a) < BigInt(b)
-                                                            ? a
-                                                            : b
-                                                )
-                                            )
-                                        ).toFixed(5)
-                                    }
+                                    default={inputValuesUnmatched[1]}
                                 />
                                 <Icon sx={{ alignSelf: "center" }}>link</Icon>
                                 <Input
@@ -679,74 +694,7 @@ function getContent(page: number): ReactNode | null {
                                             ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
                                         }
                                     }}
-                                    default={
-                                        inputValuesUnmatched[2] ??
-                                        (window.newPoolInfo !== undefined
-                                            ? "0"
-                                            : (() => {
-                                                  window.nearInitPromise.then(
-                                                      async () => {
-                                                          window.newPoolInfo =
-                                                              await getNewPoolInfo()
-                                                          inputValuesUnmatched[2] =
-                                                              (
-                                                                  parseFloat(
-                                                                      utils.format.formatNearAmount(
-                                                                          [
-                                                                              (localStorage.getItem(
-                                                                                  "OCTminAmountOut"
-                                                                              ) ??
-                                                                                  "0") +
-                                                                                  "000000",
-                                                                              ...(window.OCTBalanceOnRef !==
-                                                                              undefined
-                                                                                  ? [
-                                                                                        window.OCTBalanceOnRef +
-                                                                                            "000000"
-                                                                                    ]
-                                                                                  : [])
-                                                                          ].reduce(
-                                                                              (
-                                                                                  a: string,
-                                                                                  b: string
-                                                                              ) =>
-                                                                                  BigInt(
-                                                                                      a
-                                                                                  ) <
-                                                                                  BigInt(
-                                                                                      b
-                                                                                  )
-                                                                                      ? a
-                                                                                      : b
-                                                                          )
-                                                                      )
-                                                                  ) /
-                                                                  (Number(
-                                                                      (BigInt(
-                                                                          "10000000000"
-                                                                      ) *
-                                                                          BigInt(
-                                                                              "1000000"
-                                                                          ) *
-                                                                          BigInt(
-                                                                              window
-                                                                                  .newPoolInfo
-                                                                                  .amounts[1]
-                                                                          )) /
-                                                                          BigInt(
-                                                                              window
-                                                                                  .newPoolInfo
-                                                                                  .amounts[0]
-                                                                          )
-                                                                  ) /
-                                                                      10000000000)
-                                                              ).toFixed(5)
-                                                          updatePage()
-                                                      }
-                                                  )
-                                                  return "0"
-                                              })())
-                                    }
+                                    default={inputValuesUnmatched[2]}
                                 />
                                 <Break />
                                 {"\u2248"}{" "}
