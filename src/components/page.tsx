@@ -82,8 +82,7 @@ const setInputErrors = (
     pattern?: string,
     assert?: Array<{ test: (value: string) => boolean; msg: string }>
 ) => {
-    if (inputValuesUnmatched[id] === undefined)
-        return;
+    if (inputValuesUnmatched[id] === undefined) return
 
     const error =
         (pattern !== undefined &&
@@ -495,15 +494,27 @@ function getContent(page: number): ReactNode | null {
         case 2:
             if (window.newPoolInfo !== undefined) {
                 const values = getMaxInvest(
-                    [(BigInt(window.stNEARBalanceOnRef) + BigInt(window.stNEARBalance)).toString(), window.OCTBalanceOnRef],
+                    [
+                        (
+                            BigInt(window.stNEARBalanceOnRef) +
+                            BigInt(window.stNEARBalance)
+                        ).toString(),
+                        window.OCTBalanceOnRef
+                    ],
                     window.newPoolInfo.amounts
                 )
-                inputValuesUnmatched[1] = inputValuesUnmatched[1] ?? parseFloatFloorFixed(
-                    utils.format.formatNearAmount(values[1] + "000000"), 5
-                )
-                inputValuesUnmatched[2] = inputValuesUnmatched[2] ?? parseFloatFloorFixed(
-                    utils.format.formatNearAmount(values[0]), 5
-                )
+                inputValuesUnmatched[1] =
+                    inputValuesUnmatched[1] ??
+                    parseFloatFloorFixed(
+                        utils.format.formatNearAmount(values[1] + "000000"),
+                        5
+                    )
+                inputValuesUnmatched[2] =
+                    inputValuesUnmatched[2] ??
+                    parseFloatFloorFixed(
+                        utils.format.formatNearAmount(values[0]),
+                        5
+                    )
             }
             window.lpSharesToStake = window.newPoolInfo
                 ? calcLpSharesFromAmounts(
@@ -524,7 +535,7 @@ function getContent(page: number): ReactNode | null {
                           ).toString()
                       ]
                   )
-                : "..."
+                : "0"
             return (
                 <>
                     <TitleComponent title="Enter OCT <-> stNEAR" step={3} />
@@ -712,7 +723,11 @@ function getContent(page: number): ReactNode | null {
                                 </span>
                             </Description>
                         }
-                        denied={inputErrors[1] || inputErrors[2]}
+                        denied={
+                            inputErrors[1] ||
+                            inputErrors[2] ||
+                            BigInt(window.lpSharesToStake ?? "0") === BigInt("0")
+                        }
                         completed={
                             window.REFRESHER[3] ??
                             (() => {
