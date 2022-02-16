@@ -726,7 +726,8 @@ function getContent(page: number): ReactNode | null {
                         denied={
                             inputErrors[1] ||
                             inputErrors[2] ||
-                            BigInt(window.lpSharesToStake ?? "0") === BigInt("0")
+                            parseFloat(inputValuesUnmatched[1]) === 0 ||
+                            parseFloat(inputValuesUnmatched[2]) === 0
                         }
                         completed={
                             window.REFRESHER[3] ??
