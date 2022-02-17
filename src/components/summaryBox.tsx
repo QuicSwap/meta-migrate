@@ -2,11 +2,11 @@ import * as React from "react"
 import Box from "@mui/material/Box"
 import { Grid, useTheme, Icon } from "@mui/material"
 import OctopusLogo from "../public/octopus_logo.png"
-export default function SummaryBox( props: {
-    page: number
-} ) {
+export default function SummaryBox(props: { page: number }) {
     const theme = useTheme() as any
-    return (
+    return props.page > 0 ? (
+        <></>
+    ) : (
         <Grid
             sx={{
                 fontFamily: "Inter",
@@ -15,8 +15,7 @@ export default function SummaryBox( props: {
                 textAlign: "center",
 
                 color: "#000000",
-                justifyContent: "center",
-                opacity: props.page > 0 ? 0 : 100
+                justifyContent: "center"
             }}
         >
             <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
@@ -40,7 +39,11 @@ export default function SummaryBox( props: {
                 </Box>
                 <Box
                     component="span"
-                    sx={{ paddingTop: 5, justifyContent: "center", verticalAlign: "middle"}}
+                    sx={{
+                        paddingTop: 5,
+                        justifyContent: "center",
+                        verticalAlign: "middle"
+                    }}
                 >
                     <img src={OctopusLogo} alt=""></img>
                 </Box>

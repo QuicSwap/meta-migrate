@@ -72,7 +72,7 @@ export default function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <Header />
-            <SummaryBox page={page}/>
+            <SummaryBox page={page} />
             <Grid
                 container
                 sx={{
