@@ -19,11 +19,11 @@ export default function SummaryBox(props: { page: number }) {
             }}
         >
             <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
-                Do you want 21% APY?
+                Go from 0% to 45% APY
             </Box>
             <Box sx={{ fontWeight: "normal", fontSize: "28px" }}>
-                <Box>Get now 11% APY by stNEAR and </Box>
-                <Box>10% extra in the Farm!</Box>
+                <Box>Get now 11% by stNEAR and </Box>
+                <Box>34% extra in the Farm!</Box>
             </Box>
             <Box component="span">
                 <Box

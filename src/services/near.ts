@@ -595,6 +595,7 @@ async function getOctBalanceOnRef(): Promise<string> {
             account_id: window.account.accountId
         }
     )
+    console.log("Balance: ", window.nearConfig.ADDRESS_REF_EXCHANGE)
     return balance[window.nearConfig.ADDRESS_OCT]
         ? balance[window.nearConfig.ADDRESS_OCT]
         : "0"
