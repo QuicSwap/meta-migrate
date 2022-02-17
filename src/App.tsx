@@ -2,6 +2,8 @@ import CssBaseline from "@mui/material/CssBaseline"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import TimelineComponent from "./components/timeline"
 import PaperComponent from "./components/paper"
+import SummaryBox from "./components/summaryBox"
+import Header from "./components/header"
 import { Grid } from "@mui/material"
 import { useReducer } from "react"
 import { Refresh } from "./utils/refresh"
@@ -69,6 +71,8 @@ export default function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
+            <Header />
+            <SummaryBox />
             <Grid
                 container
                 sx={{
