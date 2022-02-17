@@ -9,6 +9,7 @@ import { useReducer } from "react"
 import { Refresh } from "./utils/refresh"
 import WalletComponent from "./components/wallet"
 import { initNear } from "./services/near"
+import { getPage } from "./utils/navigation"
 
 declare module "@mui/material/styles/createPalette" {
     interface Palette {
@@ -65,14 +66,13 @@ window.nearInitPromise = initNear().then(window.FORCEUPDATE)
 
 export default function App() {
     const [, forceUpdate] = useReducer(x => x + 1, 0)
-
     window.FORCEUPDATE = forceUpdate
-
+    const page = getPage()
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <Header />
-            <SummaryBox />
+            <SummaryBox page={page}/>
             <Grid
                 container
                 sx={{
@@ -81,8 +81,9 @@ export default function App() {
                 }}
                 direction="row"
                 justifyContent="center"
-                alignItems="center"
                 wrap="nowrap"
+                marginTop="2%"
+                position="sticky"
             >
                 <Grid
                     item
