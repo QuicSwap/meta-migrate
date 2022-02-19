@@ -187,17 +187,17 @@ const Input = (props: {
                 ...(props.unit === undefined
                     ? {}
                     : {
-                          endAdornment: (
-                              <InputAdornment position="end">
-                                  {props.unit}
-                              </InputAdornment>
-                          )
-                      }),
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                {props.unit}
+                            </InputAdornment>
+                        )
+                    }),
                 ...(props.pattern === undefined
                     ? {}
                     : {
-                          pattern: props.pattern
-                      })
+                        pattern: props.pattern
+                    })
             }}
             InputLabelProps={{
                 shrink: true
@@ -206,20 +206,20 @@ const Input = (props: {
             error={inputErrors[props.id]}
             helperText={
                 inputErrors[props.id] &&
-                props.pattern !== undefined &&
-                inputValuesUnmatched[props.id].match(props.pattern) === null
+                    props.pattern !== undefined &&
+                    inputValuesUnmatched[props.id].match(props.pattern) === null
                     ? "Invalid input value"
                     : props.assert !== undefined &&
-                      props.assert.some(a =>
-                          a.test(inputValuesUnmatched[props.id])
-                      )
-                    ? props
-                          .assert!.filter(a =>
-                              a.test(inputValuesUnmatched[props.id])
-                          )
-                          .map(a => a.msg)
-                          .reduce((a, b) => a + "\n" + b)
-                    : ""
+                        props.assert.some(a =>
+                            a.test(inputValuesUnmatched[props.id])
+                        )
+                        ? props
+                            .assert!.filter(a =>
+                                a.test(inputValuesUnmatched[props.id])
+                            )
+                            .map(a => a.msg)
+                            .reduce((a, b) => a + "\n" + b)
+                        : ""
             }
             onChange={e => {
                 setInputValues(props.id, e.target.value, props.pattern)
@@ -231,8 +231,45 @@ const Input = (props: {
     )
 }
 
-const parseFloatFloorFixed = (str: string, acc: number = 4) =>
-    (Math.floor(parseFloat(str) * 10 ** acc) / 10 ** acc).toFixed(acc)
+// PROBLEM: This fn is used in conjunction with utils.format.formatNearAmount
+// but utils.format.formatNearAmount USES LOCALIZED decimal-separator and thousands-separators
+// so this function DOES NOT WORK if the LOCAL decimal-separator!=="." and LOCAL thousands-separators!==","
+// SOLUTION: 
+// use yton() that converts an amount in yoctos into a formatted amount in near, floored
+// const parseFloatFloorFixed = (str: string, acc: number = 4) =>
+//     (Math.floor(parseFloat(str) * 10 ** acc) / 10 ** acc).toFixed(acc)
+
+/**
+ * Converts YOCTOS to formatted NEAR amounts
+ * returns string with a decimal point and [decimal] decimal places, floored
+ * also add commas as thousands separators
+ * @param {string} yoctoString amount in yoctos as string
+ */
+export function yton(yoctoString: string, decimals: number = 5): string {
+    let result = (yoctoString + "").padStart(25, "0")
+    // 1 NEAR = 1e24 YOCTOS
+    result = result.slice(0, -24) + "." + result.slice(-24)
+    // remove extra decimals (flooring)
+    if (decimals > 23) { decimals = 23 };
+    if (decimals <= 0) { decimals = 1 };
+    result = result.slice(0, -24 + decimals)
+    return addCommas(result)
+}
+/**
+* adds commas to a string number 
+* @param {string} str 
+*/
+function addCommas(str: string) {
+    let n = str.indexOf(".")
+    if (n == -1) n = str.length
+    n -= 4
+    while (n >= 0) {
+        str = str.slice(0, n + 1) + "," + str.slice(n + 1)
+        n = n - 3
+    }
+    return str;
+}
+
 
 function getContent(page: number): ReactNode | null {
     switch (page) {
@@ -254,12 +291,10 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .user_total_shares
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                window.oldPosition
+                                                    .user_total_shares
+                                            )!
                                             : "..."}
                                     </Purple>
                                     {""} LP shares
@@ -269,13 +304,11 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .min_amounts[0] +
-                                                          "000000" // cheap way to divide by 1e6
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                window.oldPosition
+                                                    .min_amounts[0] +
+                                                "000000" // cheap way to divide by 1e6
+                                            )!
                                             : "..."}
                                     </Purple>
                                     {""} $OCT and {""}
@@ -283,12 +316,10 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .min_amounts[1]
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                window.oldPosition
+                                                    .min_amounts[1]
+                                            )!
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR.
@@ -309,9 +340,9 @@ function getContent(page: number): ReactNode | null {
                                                     BigInt(
                                                         res.user_lp_shares
                                                     ) === BigInt("0") &&
-                                                        BigInt(
-                                                            res.user_farm_shares
-                                                        ) === BigInt("0")
+                                                    BigInt(
+                                                        res.user_farm_shares
+                                                    ) === BigInt("0")
                                                 )
                                             })
                                         )
@@ -352,12 +383,8 @@ function getContent(page: number): ReactNode | null {
                                 You currently have {""}
                                 <span>
                                     <Purple>
-                                        {window.nativeNEARBalance
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      window.nativeNEARBalance
-                                                  )
-                                              )
+                                        {window.nativeNEARBalance ?
+                                            yton(window.nativeNEARBalance)
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR in your wallet.
@@ -373,38 +400,36 @@ function getContent(page: number): ReactNode | null {
                                         {
                                             test: (value: string) =>
                                                 window.minDepositAmount !==
-                                                    undefined &&
+                                                undefined &&
                                                 BigInt(
                                                     utils.format.parseNearAmount(
                                                         value
                                                     ) ?? "0"
                                                 ) <
-                                                    BigInt(
-                                                        window.minDepositAmount
-                                                    ),
-                                            msg: `Staking with MetaPool requires a minimum deposit of ${parseFloat(
-                                                utils.format.formatNearAmount(
+                                                BigInt(
                                                     window.minDepositAmount
-                                                )
-                                            ).toFixed(3)} $NEAR.`
+                                                ),
+                                            msg: `Staking with MetaPool requires a minimum deposit of ${yton(
+                                                window.minDepositAmount, 2
+                                            )
+                                                } $NEAR.`
                                         },
                                         {
                                             test: (value: string) =>
                                                 window.nativeNEARBalance !==
-                                                    undefined &&
+                                                undefined &&
                                                 BigInt(
                                                     utils.format.parseNearAmount(
                                                         value
                                                     ) ?? "0"
                                                 ) >
-                                                    BigInt(
-                                                        window.nativeNEARBalance
-                                                    ),
-                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
-                                                utils.format.formatNearAmount(
+                                                BigInt(
                                                     window.nativeNEARBalance
-                                                )
-                                            )} $NEAR in your wallet.`
+                                                ),
+                                            msg: `Insufficient funds. You only have ${utils.format.formatNearAmount(
+                                                window.nativeNEARBalance
+                                            )
+                                                } $NEAR in your wallet.`
                                         }
                                     ]}
                                     default={
@@ -421,23 +446,23 @@ function getContent(page: number): ReactNode | null {
                                     <Purple>
                                         {window.stNEARPrice
                                             ? parseFloat(
-                                                  (
-                                                      Number(
-                                                          BigInt(
-                                                              inputErrors[0]
-                                                                  ? "0"
-                                                                  : (utils.format.parseNearAmount(
-                                                                        inputValues[0] ??
-                                                                            "0"
-                                                                    ) as string) +
-                                                                        "0000"
-                                                          ) /
-                                                              BigInt(
-                                                                  window.stNEARPrice
-                                                              )
-                                                      ) / 10000
-                                                  ).toString()
-                                              ).toFixed(3)
+                                                (
+                                                    Number(
+                                                        BigInt(
+                                                            inputErrors[0]
+                                                                ? "0"
+                                                                : (utils.format.parseNearAmount(
+                                                                    inputValues[0] ??
+                                                                    "0"
+                                                                ) as string) +
+                                                                "0000"
+                                                        ) /
+                                                        BigInt(
+                                                            window.stNEARPrice
+                                                        )
+                                                    ) / 10000
+                                                ).toString()
+                                            ).toFixed(5)
                                             : "..."}
                                     </Purple>
                                     {""} $stNEAR.
@@ -467,9 +492,9 @@ function getContent(page: number): ReactNode | null {
                                                     BigInt(
                                                         window.nativeNEARBalance
                                                     ) <
-                                                        BigInt(
-                                                            window.minDepositAmount
-                                                        )
+                                                    BigInt(
+                                                        window.minDepositAmount
+                                                    )
                                                 )
                                             })
                                         ),
@@ -505,36 +530,34 @@ function getContent(page: number): ReactNode | null {
                 )
                 inputValuesUnmatched[1] =
                     inputValuesUnmatched[1] ??
-                    parseFloatFloorFixed(
-                        utils.format.formatNearAmount(values[1] + "000000"),
-                        5
-                    )
+
+                    yton(values[1] + "000000")
+
                 inputValuesUnmatched[2] =
                     inputValuesUnmatched[2] ??
-                    parseFloatFloorFixed(
-                        utils.format.formatNearAmount(values[0]),
-                        5
-                    )
+
+                    yton(values[0])
+
             }
             window.lpSharesToStake = window.newPoolInfo
                 ? calcLpSharesFromAmounts(
-                      window.newPoolInfo.total_shares,
-                      window.newPoolInfo.amounts,
-                      [
-                          utils.format.parseNearAmount(
-                              inputErrors[2] ? "0" : inputValues[2] ?? "0"
-                          )!,
-                          (
-                              BigInt(
-                                  utils.format.parseNearAmount(
-                                      inputErrors[1]
-                                          ? "0"
-                                          : inputValues[1] ?? "0"
-                                  )!
-                              ) / BigInt("1000000")
-                          ).toString()
-                      ]
-                  )
+                    window.newPoolInfo.total_shares,
+                    window.newPoolInfo.amounts,
+                    [
+                        utils.format.parseNearAmount(
+                            inputErrors[2] ? "0" : inputValues[2] ?? "0"
+                        )!,
+                        (
+                            BigInt(
+                                utils.format.parseNearAmount(
+                                    inputErrors[1]
+                                        ? "0"
+                                        : inputValues[1] ?? "0"
+                                )!
+                            ) / BigInt("1000000")
+                        ).toString()
+                    ]
+                )
                 : "0"
             return (
                 <>
@@ -548,12 +571,9 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.OCTBalanceOnRef !== undefined
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      window.OCTBalanceOnRef +
-                                                          "000000"
-                                                  )
-                                              )
+                                            ? yton(
+                                                window.OCTBalanceOnRef + "000000"
+                                            )
                                             : "..."}
                                     </Purple>
                                     {""} $OCT
@@ -562,19 +582,16 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.stNEARBalance !== undefined &&
-                                        window.stNEARBalanceOnRef !== undefined
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      (
-                                                          BigInt(
-                                                              window.stNEARBalance
-                                                          ) +
-                                                          BigInt(
-                                                              window.stNEARBalanceOnRef
-                                                          )
-                                                      ).toString()
-                                                  )
-                                              )
+                                            window.stNEARBalanceOnRef !== undefined
+                                            ? yton((
+                                                BigInt(
+                                                    window.stNEARBalance
+                                                ) +
+                                                BigInt(
+                                                    window.stNEARBalanceOnRef
+                                                )
+                                            ).toString()
+                                            )
                                             : "..."}
                                     </Purple>
                                     {""} $stNEAR.
@@ -590,27 +607,24 @@ function getContent(page: number): ReactNode | null {
                                         {
                                             test: (value: string) =>
                                                 window.OCTBalanceOnRef !==
-                                                    undefined &&
+                                                undefined &&
                                                 BigInt(
                                                     utils.format.parseNearAmount(
                                                         value
                                                     ) ?? "0"
                                                 ) >
-                                                    BigInt(
-                                                        window.OCTBalanceOnRef +
-                                                            "000000"
-                                                    ),
-                                            msg: `Insufficient funds. You only have ${
-                                                window.OCTBalanceOnRef !==
+                                                BigInt(
+                                                    window.OCTBalanceOnRef +
+                                                    "000000"
+                                                ),
+                                            msg: `Insufficient funds. You only have ${window.OCTBalanceOnRef !==
                                                 undefined
-                                                    ? parseFloatFloorFixed(
-                                                          utils.format.formatNearAmount(
-                                                              window.OCTBalanceOnRef +
-                                                                  "000000"
-                                                          )
-                                                      )
-                                                    : "..."
-                                            } $OCT on Ref-finance.`
+                                                ? yton(
+                                                    window.OCTBalanceOnRef +
+                                                    "000000"
+                                                )
+                                                : "..."
+                                                } $OCT on Ref-finance.`
                                         }
                                     ]}
                                     onChange={(value: string) => {
@@ -628,10 +642,10 @@ function getContent(page: number): ReactNode | null {
                                                             window.newPoolInfo
                                                                 .amounts[1]
                                                         )) /
-                                                        BigInt(
-                                                            window.newPoolInfo
-                                                                .amounts[0]
-                                                        )
+                                                    BigInt(
+                                                        window.newPoolInfo
+                                                            .amounts[0]
+                                                    )
                                                 ) /
                                                     10000000000)
                                             ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
@@ -650,34 +664,33 @@ function getContent(page: number): ReactNode | null {
                                         {
                                             test: (value: string) =>
                                                 window.stNEARBalanceOnRef !==
-                                                    undefined &&
+                                                undefined &&
                                                 window.stNEARBalance !==
-                                                    undefined &&
+                                                undefined &&
                                                 BigInt(
                                                     utils.format.parseNearAmount(
                                                         value
                                                     ) ?? "0"
                                                 ) >
+                                                BigInt(
+                                                    window.stNEARBalanceOnRef
+                                                ) +
+                                                BigInt(
+                                                    window.stNEARBalance
+                                                ),
+                                            msg: `Insufficient funds. You only have ${yton(
+                                                (
                                                     BigInt(
-                                                        window.stNEARBalanceOnRef
+                                                        window.stNEARBalanceOnRef ??
+                                                        "0"
                                                     ) +
-                                                        BigInt(
-                                                            window.stNEARBalance
-                                                        ),
-                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
-                                                utils.format.formatNearAmount(
-                                                    (
-                                                        BigInt(
-                                                            window.stNEARBalanceOnRef ??
-                                                                "0"
-                                                        ) +
-                                                        BigInt(
-                                                            window.stNEARBalance ??
-                                                                "0"
-                                                        )
-                                                    ).toString()
-                                                )
-                                            )} stNEAR in total.`
+                                                    BigInt(
+                                                        window.stNEARBalance ??
+                                                        "0"
+                                                    )
+                                                ).toString()
+                                            )
+                                                } stNEAR in total.`
                                         }
                                     ]}
                                     onChange={(value: string) => {
@@ -695,11 +708,11 @@ function getContent(page: number): ReactNode | null {
                                                                     .newPoolInfo
                                                                     .amounts[1]
                                                             )) /
-                                                            BigInt(
-                                                                window
-                                                                    .newPoolInfo
-                                                                    .amounts[0]
-                                                            )
+                                                        BigInt(
+                                                            window
+                                                                .newPoolInfo
+                                                                .amounts[0]
+                                                        )
                                                     )) /
                                                 10000000000
                                             ).toFixed(5) // TODO: check if final pool is [OCT, stNEAR] or [stNEAR, OCT]
@@ -712,11 +725,9 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.newPoolInfo
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.lpSharesToStake
-                                                  )
-                                              ).toFixed(3)
+                                            ? yton(
+                                                window.lpSharesToStake
+                                            )
                                             : "..."}
                                     </Purple>
                                     {""} LP shares. {""}
@@ -807,13 +818,9 @@ function getContent(page: number): ReactNode | null {
                         <span>
                             <Purple>
                                 {window.newFarmingStake
-                                    ? parseFloat(
-                                          utils.format
-                                              .formatNearAmount(
-                                                  window.newFarmingStake
-                                              )
-                                              .toString()
-                                      ).toFixed(3)
+                                    ? yton(
+                                        window.newFarmingStake
+                                    )
                                     : "..."}
                             </Purple>
                             {""} LP shares in the farm.
@@ -933,14 +940,14 @@ function getContent(page: number): ReactNode | null {
                                         sx={
                                             row.noline
                                                 ? {
-                                                      "& *": {
-                                                          border: 0
-                                                      }
-                                                  }
+                                                    "& *": {
+                                                        border: 0
+                                                    }
+                                                }
                                                 : {
-                                                      "&:last-child td, &:last-child th":
-                                                          { border: 0 }
-                                                  }
+                                                    "&:last-child td, &:last-child th":
+                                                        { border: 0 }
+                                                }
                                         }
                                     >
                                         <TableCell
@@ -950,8 +957,8 @@ function getContent(page: number): ReactNode | null {
                                                 cursor: "pointer"
                                             }}
                                             onClick={event =>
-                                                (window.location.href =
-                                                    row.link)
+                                            (window.location.href =
+                                                row.link)
                                             }
                                         >
                                             {row.location !== "" ? (
@@ -978,15 +985,15 @@ function getContent(page: number): ReactNode | null {
                                         </TableCell>
                                         <TableCell align="right">
                                             {row.amount
-                                                ? parseFloat(
-                                                      utils.format.formatNearAmount(
-                                                          row.amount +
-                                                              (row.unit ===
-                                                              "OCT"
-                                                                  ? "000000"
-                                                                  : "")
-                                                      )!
-                                                  ).toFixed(3)
+                                                ?
+                                                yton(
+                                                    row.amount +
+                                                    (row.unit ===
+                                                        "OCT"
+                                                        ? "000000"
+                                                        : "")
+                                                )!
+
                                                 : "..."}{" "}
                                         </TableCell>
                                         <TableCell sx={{ width: "10ch" }}>
