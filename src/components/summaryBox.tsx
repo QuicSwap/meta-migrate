@@ -8,6 +8,7 @@ export default function SummaryBox(props: { page: number }) {
         <></>
     ) : (
         <Grid
+            className="title"
             sx={{
                 fontFamily: "Inter",
                 fontStyle: "normal",
@@ -15,11 +16,14 @@ export default function SummaryBox(props: { page: number }) {
                 textAlign: "center",
 
                 color: "#000000",
-                justifyContent: "center"
+                justifyContent: "center",
+                
             }}
         >
-            <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
-                Go from 0% to 45% APY
+            <Box 
+                
+                sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
+                 Go from 0% to 45% APY
             </Box>
             <Box sx={{ fontWeight: "normal", fontSize: "28px" }}>
                 <Box>Get now 11% by stNEAR and </Box>
