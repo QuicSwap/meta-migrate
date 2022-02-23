@@ -7,9 +7,12 @@ export default function Header() {
         <Grid sx={{ margin: 4 }}>
             <header>
                 <img src={RecipesLogo} alt=""></img>
-                <Box className="back" component="span" justifyContent="flex-end">
+                <Box
+                    className="back"
+                    component="span"
+                    justifyContent="flex-end"
+                >
                     <Button
-                        
                         variant="outlined"
                         sx={{
                             borderRadius: "100px",
