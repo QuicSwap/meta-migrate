@@ -231,8 +231,48 @@ const Input = (props: {
     )
 }
 
-const parseFloatFloorFixed = (str: string, acc: number = 4) =>
-    (Math.floor(parseFloat(str) * 10 ** acc) / 10 ** acc).toFixed(acc)
+// PROBLEM: This fn is used in conjunction with utils.format.formatNearAmount
+// but utils.format.formatNearAmount USES LOCALIZED decimal-separator and thousands-separators
+// so this function DOES NOT WORK if the LOCAL decimal-separator!=="." and LOCAL thousands-separators!==","
+// SOLUTION:
+// use yton() that converts an amount in yoctos into a formatted amount in near, floored
+// const parseFloatFloorFixed = (str: string, acc: number = 4) =>
+//     (Math.floor(parseFloat(str) * 10 ** acc) / 10 ** acc).toFixed(acc)
+
+/**
+ * Converts YOCTOS to formatted NEAR amounts
+ * returns string with a decimal point and [decimal] decimal places, floored
+ * also add commas as thousands separators
+ * @param {string} yoctoString amount in yoctos as string
+ */
+export function yton(yoctoString: string, decimals: number = 5): string {
+    let result = (yoctoString + "").padStart(25, "0")
+    // 1 NEAR = 1e24 YOCTOS
+    result = result.slice(0, -24) + "." + result.slice(-24)
+    // remove extra decimals (flooring)
+    if (decimals > 23) {
+        decimals = 23
+    }
+    if (decimals <= 0) {
+        decimals = 1
+    }
+    result = result.slice(0, -24 + decimals)
+    return addCommas(result)
+}
+/**
+ * adds commas to a string number
+ * @param {string} str
+ */
+function addCommas(str: string) {
+    let n = str.indexOf(".")
+    if (n == -1) n = str.length
+    n -= 4
+    while (n >= 0) {
+        str = str.slice(0, n + 1) + "," + str.slice(n + 1)
+        n = n - 3
+    }
+    return str
+}
 
 function getContent(page: number): ReactNode | null {
     switch (page) {
@@ -254,12 +294,10 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .user_total_shares
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                  window.oldPosition
+                                                      .user_total_shares
+                                              )!
                                             : "..."}
                                     </Purple>
                                     {""} LP shares
@@ -269,13 +307,10 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .min_amounts[0] +
-                                                          "000000" // cheap way to divide by 1e6
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                  window.oldPosition
+                                                      .min_amounts[0] + "000000" // cheap way to divide by 1e6
+                                              )!
                                             : "..."}
                                     </Purple>
                                     {""} $OCT and {""}
@@ -283,12 +318,10 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.oldPosition
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.oldPosition
-                                                          .min_amounts[1]
-                                                  )!
-                                              ).toFixed(3)
+                                            ? yton(
+                                                  window.oldPosition
+                                                      .min_amounts[1]
+                                              )!
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR.
@@ -353,11 +386,7 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.nativeNEARBalance
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      window.nativeNEARBalance
-                                                  )
-                                              )
+                                            ? yton(window.nativeNEARBalance)
                                             : "..."}
                                     </Purple>
                                     {""} $NEAR in your wallet.
@@ -382,11 +411,10 @@ function getContent(page: number): ReactNode | null {
                                                     BigInt(
                                                         window.minDepositAmount
                                                     ),
-                                            msg: `Staking with MetaPool requires a minimum deposit of ${parseFloat(
-                                                utils.format.formatNearAmount(
-                                                    window.minDepositAmount
-                                                )
-                                            ).toFixed(3)} $NEAR.`
+                                            msg: `Staking with MetaPool requires a minimum deposit of ${yton(
+                                                window.minDepositAmount,
+                                                2
+                                            )} $NEAR.`
                                         },
                                         {
                                             test: (value: string) =>
@@ -400,10 +428,8 @@ function getContent(page: number): ReactNode | null {
                                                     BigInt(
                                                         window.nativeNEARBalance
                                                     ),
-                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
-                                                utils.format.formatNearAmount(
-                                                    window.nativeNEARBalance
-                                                )
+                                            msg: `Insufficient funds. You only have ${utils.format.formatNearAmount(
+                                                window.nativeNEARBalance
                                             )} $NEAR in your wallet.`
                                         }
                                     ]}
@@ -437,7 +463,7 @@ function getContent(page: number): ReactNode | null {
                                                               )
                                                       ) / 10000
                                                   ).toString()
-                                              ).toFixed(3)
+                                              ).toFixed(5)
                                             : "..."}
                                     </Purple>
                                     {""} $stNEAR.
@@ -504,17 +530,10 @@ function getContent(page: number): ReactNode | null {
                     window.newPoolInfo.amounts
                 )
                 inputValuesUnmatched[1] =
-                    inputValuesUnmatched[1] ??
-                    parseFloatFloorFixed(
-                        utils.format.formatNearAmount(values[1] + "000000"),
-                        5
-                    )
+                    inputValuesUnmatched[1] ?? yton(values[1] + "000000")
+
                 inputValuesUnmatched[2] =
-                    inputValuesUnmatched[2] ??
-                    parseFloatFloorFixed(
-                        utils.format.formatNearAmount(values[0]),
-                        5
-                    )
+                    inputValuesUnmatched[2] ?? yton(values[0])
             }
             window.lpSharesToStake = window.newPoolInfo
                 ? calcLpSharesFromAmounts(
@@ -548,11 +567,9 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.OCTBalanceOnRef !== undefined
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      window.OCTBalanceOnRef +
-                                                          "000000"
-                                                  )
+                                            ? yton(
+                                                  window.OCTBalanceOnRef +
+                                                      "000000"
                                               )
                                             : "..."}
                                     </Purple>
@@ -563,17 +580,15 @@ function getContent(page: number): ReactNode | null {
                                     <Purple>
                                         {window.stNEARBalance !== undefined &&
                                         window.stNEARBalanceOnRef !== undefined
-                                            ? parseFloatFloorFixed(
-                                                  utils.format.formatNearAmount(
-                                                      (
-                                                          BigInt(
-                                                              window.stNEARBalance
-                                                          ) +
-                                                          BigInt(
-                                                              window.stNEARBalanceOnRef
-                                                          )
-                                                      ).toString()
-                                                  )
+                                            ? yton(
+                                                  (
+                                                      BigInt(
+                                                          window.stNEARBalance
+                                                      ) +
+                                                      BigInt(
+                                                          window.stNEARBalanceOnRef
+                                                      )
+                                                  ).toString()
                                               )
                                             : "..."}
                                     </Purple>
@@ -603,11 +618,9 @@ function getContent(page: number): ReactNode | null {
                                             msg: `Insufficient funds. You only have ${
                                                 window.OCTBalanceOnRef !==
                                                 undefined
-                                                    ? parseFloatFloorFixed(
-                                                          utils.format.formatNearAmount(
-                                                              window.OCTBalanceOnRef +
-                                                                  "000000"
-                                                          )
+                                                    ? yton(
+                                                          window.OCTBalanceOnRef +
+                                                              "000000"
                                                       )
                                                     : "..."
                                             } $OCT on Ref-finance.`
@@ -664,19 +677,17 @@ function getContent(page: number): ReactNode | null {
                                                         BigInt(
                                                             window.stNEARBalance
                                                         ),
-                                            msg: `Insufficient funds. You only have ${parseFloatFloorFixed(
-                                                utils.format.formatNearAmount(
-                                                    (
-                                                        BigInt(
-                                                            window.stNEARBalanceOnRef ??
-                                                                "0"
-                                                        ) +
-                                                        BigInt(
-                                                            window.stNEARBalance ??
-                                                                "0"
-                                                        )
-                                                    ).toString()
-                                                )
+                                            msg: `Insufficient funds. You only have ${yton(
+                                                (
+                                                    BigInt(
+                                                        window.stNEARBalanceOnRef ??
+                                                            "0"
+                                                    ) +
+                                                    BigInt(
+                                                        window.stNEARBalance ??
+                                                            "0"
+                                                    )
+                                                ).toString()
                                             )} stNEAR in total.`
                                         }
                                     ]}
@@ -712,11 +723,7 @@ function getContent(page: number): ReactNode | null {
                                 <span>
                                     <Purple>
                                         {window.newPoolInfo
-                                            ? parseFloat(
-                                                  utils.format.formatNearAmount(
-                                                      window.lpSharesToStake
-                                                  )
-                                              ).toFixed(3)
+                                            ? yton(window.lpSharesToStake)
                                             : "..."}
                                     </Purple>
                                     {""} LP shares. {""}
@@ -807,13 +814,7 @@ function getContent(page: number): ReactNode | null {
                         <span>
                             <Purple>
                                 {window.newFarmingStake
-                                    ? parseFloat(
-                                          utils.format
-                                              .formatNearAmount(
-                                                  window.newFarmingStake
-                                              )
-                                              .toString()
-                                      ).toFixed(3)
+                                    ? yton(window.newFarmingStake)
                                     : "..."}
                             </Purple>
                             {""} LP shares in the farm.
@@ -978,15 +979,12 @@ function getContent(page: number): ReactNode | null {
                                         </TableCell>
                                         <TableCell align="right">
                                             {row.amount
-                                                ? parseFloat(
-                                                      utils.format.formatNearAmount(
-                                                          row.amount +
-                                                              (row.unit ===
-                                                              "OCT"
-                                                                  ? "000000"
-                                                                  : "")
-                                                      )!
-                                                  ).toFixed(3)
+                                                ? yton(
+                                                      row.amount +
+                                                          (row.unit === "OCT"
+                                                              ? "000000"
+                                                              : "")
+                                                  )!
                                                 : "..."}{" "}
                                         </TableCell>
                                         <TableCell sx={{ width: "10ch" }}>

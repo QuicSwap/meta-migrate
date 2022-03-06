@@ -17,7 +17,7 @@ export default function TitleComponent(props: {
             }}
         >
             {props.step !== undefined ? (
-                <h3
+                <h1
                     style={{
                         color: theme.palette.primary.main,
                         position: "absolute",
@@ -26,7 +26,7 @@ export default function TitleComponent(props: {
                     }}
                 >
                     {`Step ${props.step}:`}
-                </h3>
+                </h1>
             ) : (
                 <></>
             )}
