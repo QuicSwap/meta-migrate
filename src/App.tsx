@@ -79,6 +79,7 @@ export default function App() {
                     width: 1,
                     height: 1
                 }}
+                className="timeline-container"
                 direction="row"
                 justifyContent="center"
                 wrap="nowrap"

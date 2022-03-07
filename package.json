@@ -1,5 +1,5 @@
 {
-    "homepage": "https://metapool.app/dapp/mainnet/meta-recipes/",
+    "homepage": "https://metapool.app/dapp/testnet/meta-recipes/",
     "name": "meta-migrate",
     "version": "0.1.0",
     "private": true,
@@ -23,11 +23,14 @@
         "emotion": "^11.0.0",
         "gh-pages": "^3.2.3",
         "near-api-js": "^0.44.2",
+        "no-cors-proxy": "^1.0.5",
         "react": "^17.0.2",
         "react-dom": "^17.0.2",
         "react-scripts": "5.0.0",
+        "stream-http": "^3.2.0",
         "styled-components": "^5.3.3",
         "typescript": "^4.4.2",
+        "url": "^0.11.0",
         "web-vitals": "^2.1.0"
     },
     "scripts": {
