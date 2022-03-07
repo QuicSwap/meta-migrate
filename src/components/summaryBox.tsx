@@ -23,7 +23,7 @@ export default function SummaryBox(props: { page: number }) {
     useEffect(() => {
         async function getPercentage() {
             try {
-                let percentage = parseInt(await getFarmAPR())
+                let percentage = Number(await getFarmAPR())
                 if (isNaN(percentage) || percentage == 0) {
                     percentage = 25
                 }
