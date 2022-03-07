@@ -2,41 +2,32 @@ import { useState, useEffect } from "react"
 import Box from "@mui/material/Box"
 import { Grid, useTheme, Icon } from "@mui/material"
 import OctopusLogo from "../public/octopus_logo.png"
-
+// const NoCorsProxy = require("no-cors-proxy")
+// const port = 3000
+// const host = "localhost"
+const url = "http://app.ref.finance/farms"
 
 export default function SummaryBox(props: { page: number }) {
     const theme = useTheme() as any
     const [percentage, setPercentage] = useState(29)
+
+    async function getFarmAPR(): Promise<string> {
+        const narwalletsResponse: Response = await fetch(
+            "https://validators.narwallets.com/metrics_json"
+        )
+        const jsonResponse = await narwalletsResponse.json()
+        const apr = jsonResponse.ref_oct_st_near_apr
+        console.log(apr)
+        return jsonResponse.ref_oct_st_near_apr
+    }
     useEffect(() => {
         async function getPercentage() {
             try {
-                const requestMode: RequestMode = "no-cors"
-                const getParams = {
-                    mode: requestMode,
-                    headers: {
-                        "Access-Control-Allow-Origin": "*",
-                        Host: "app.ref.finance"
-                    }
+                let percentage = parseInt(await getFarmAPR())
+                if (isNaN(percentage) || percentage == 0) {
+                    percentage = 25
                 }
-                const refFarmsResponse: Response = await fetch(
-                    "https://app.ref.finance/farms",
-                    getParams
-                )
-                const html = await refFarmsResponse.text()
-                var parser = new DOMParser()
-                console.log(refFarmsResponse)
-                var doc = parser.parseFromString(html, "text/html")
-                const poolElement = doc.getElementById("1889")
-                let percentage = 29
-                if (poolElement) {
-                    const percentageElement: HTMLElement =
-                        poolElement.getElementsByClassName(
-                            "text-xl"
-                        )[1] as HTMLElement
-                    alert(percentageElement.innerText)
-                }
-                alert(poolElement)
-                setPercentage(40)
+                setPercentage(percentage)
             } catch (ex) {
                 alert("Error")
             }
