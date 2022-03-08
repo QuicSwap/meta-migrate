@@ -16,8 +16,6 @@ export default function SummaryBox(props: { page: number }) {
             "https://validators.narwallets.com/metrics_json"
         )
         const jsonResponse = await narwalletsResponse.json()
-        const apr = jsonResponse.ref_oct_st_near_apr
-        console.log(apr)
         return jsonResponse.ref_oct_st_near_apr
     }
     useEffect(() => {
@@ -26,7 +24,7 @@ export default function SummaryBox(props: { page: number }) {
                 let percentage = Number(await getFarmAPR())
                 if (isNaN(percentage) || percentage == 0) {
                     percentage = 25
-                }
+                } 
                 setPercentage(percentage)
             } catch (ex) {
                 alert("Error")
@@ -50,7 +48,7 @@ export default function SummaryBox(props: { page: number }) {
             }}
         >
             <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
-                Go from 0% to {11 + percentage}% APY
+                Go from 0% to {(11 + percentage).toFixed(2)}% APY
             </Box>
             <Box sx={{ fontWeight: "normal", fontSize: "28px" }}>
                 <Box>Get now 11% by stNEAR and </Box>
