@@ -18,9 +18,7 @@ export default function SummaryBox(props: { page: number }) {
                 justifyContent: "center"
             }}
         >
-            <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>
-                Go from 0% to 35% APY
-            </Box>
+            <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>Go from 0% to 35% APY</Box>
             <Box sx={{ fontWeight: "normal", fontSize: "28px" }}>
                 <Box>Get now 11% by stNEAR and </Box>
                 <Box>24% extra in the Farm!</Box>

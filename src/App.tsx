@@ -22,7 +22,8 @@ declare module "@mui/material/styles/createPalette" {
 
 declare global {
     interface Window {
-        FORCEUPDATE: any
+        updateApp: any
+        updatePage: any
         REFRESHER: Refresh[]
         EMPTY_REFRESH: Refresh
     }
@@ -62,11 +63,11 @@ const theme = createTheme({
     spacing: 8
 })
 
-window.nearInitPromise = initNear().then(window.FORCEUPDATE)
+window.nearInitPromise = initNear().then(window.updateApp)
 
 export default function App() {
     const [, forceUpdate] = useReducer(x => x + 1, 0)
-    window.FORCEUPDATE = forceUpdate
+    window.updateApp = forceUpdate
     const page = getPage()
     return (
         <ThemeProvider theme={theme}>
@@ -85,14 +86,7 @@ export default function App() {
                 marginTop="2%"
                 position="sticky"
             >
-                <Grid
-                    item
-                    container
-                    direction="column"
-                    alignItems="flex-end"
-                    wrap="nowrap"
-                    xs={2}
-                >
+                <Grid item container direction="column" alignItems="flex-end" wrap="nowrap" xs={2}>
                     <WalletComponent />
                     <TimelineComponent />
                 </Grid>

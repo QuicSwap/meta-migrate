@@ -2,10 +2,7 @@ import * as React from "react"
 import { Grid, useTheme } from "@mui/material"
 import { positions } from "@mui/system"
 
-export default function TitleComponent(props: {
-    title: string
-    step?: number
-}) {
+export default function TitleComponent(props: { title: string; step?: number }) {
     const theme = useTheme() as any
     return (
         <Grid
