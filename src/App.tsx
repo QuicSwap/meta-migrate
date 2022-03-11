@@ -4,7 +4,7 @@ import TimelineComponent from "./components/timeline"
 import PaperComponent from "./components/paper"
 import SummaryBox from "./components/summaryBox"
 import Header from "./components/header"
-import { Grid } from "@mui/material"
+import { Box, Grid } from "@mui/material"
 import { useReducer } from "react"
 import { Refresh } from "./utils/refresh"
 import WalletComponent from "./components/wallet"
@@ -71,39 +71,61 @@ export default function App() {
     const page = getPage()
     return (
         <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Header />
-            <SummaryBox page={page} />
-            <Grid
-                container
+            <Box
                 sx={{
-                    width: 1,
-                    height: 1
+                    height: 1,
+                    minWidth: "1150px",
+                    display: "flex",
+                    flexFlow: "column nowrap"
                 }}
-                direction="row"
-                justifyContent="center"
-                wrap="nowrap"
-                marginTop="2%"
-                position="sticky"
             >
-                <Grid item container direction="column" alignItems="flex-end" wrap="nowrap" xs={2}>
-                    <WalletComponent />
-                    <TimelineComponent />
-                </Grid>
+                <CssBaseline />
+                <Header />
+                {page === 0 ? <SummaryBox /> : <></>}
                 <Grid
-                    item
+                    container
                     sx={{
-                        height: 0.5,
-                        minHeight: "400px",
-                        flexBasis: "800px",
-                        flexShrink: 0,
-                        width: 0.5
+                        width: 1,
+                        height: 1,
+                        flex: "1 1 0"
                     }}
+                    direction="row"
+                    justifyContent="center"
+                    alignItems="center"
+                    wrap="nowrap"
+                    position="sticky"
                 >
-                    <PaperComponent />
+                    <Grid
+                        item
+                        container
+                        direction="column"
+                        alignItems="flex-end"
+                        wrap="nowrap"
+                        flexShrink={0}
+                        sx={{
+                            height: "fit-content"
+                        }}
+                        xs={2}
+                    >
+                        <WalletComponent />
+                        <TimelineComponent />
+                    </Grid>
+                    <Grid
+                        item
+                        sx={{
+                            height: 0.5,
+                            minHeight: "500px",
+                            maxHeight: "800px",
+                            flexBasis: "800px",
+                            flexShrink: 0,
+                            width: 0.5
+                        }}
+                    >
+                        <PaperComponent />
+                    </Grid>
+                    <Grid item xs={2} sx={{ height: 0, flex: "1 1 0 !important" }} />
                 </Grid>
-                <Grid item xs={2} />
-            </Grid>
+            </Box>
         </ThemeProvider>
     )
 }

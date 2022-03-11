@@ -10,6 +10,7 @@ export default function PaperComponent() {
                 width: 1,
                 height: "fit-content",
                 minHeight: 1,
+                mb: 4,
                 display: "flex",
                 "& > *": {
                     height: "unset !important"

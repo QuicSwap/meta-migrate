@@ -70,8 +70,10 @@ const Loading = (
     apply: (s: string) => string = s => s
 ): string[] | string => {
     return typeof value === "object"
-        ? value.map(v => condition && v ? apply(v) : "...")
-        : condition && value ? apply(value) : "..." 
+        ? value.map(v => (condition && v ? apply(v) : "..."))
+        : condition && value
+        ? apply(value)
+        : "..."
 }
 
 export { Description, Break, LineSpacing, Warning, Purple, Note, Loading }

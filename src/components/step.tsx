@@ -40,7 +40,7 @@ export default function StepComponent(props: {
             justifyContent="space-evenly"
             alignItems="center"
         >
-            <Grid item xs={8}>
+            <Grid item sx={{py: 4}} xs={8}>
                 <b>{props.title}</b>
                 <br />
                 {props.description}

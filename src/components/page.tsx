@@ -360,7 +360,7 @@ function getContent(page: number): ReactNode | null {
             return (
                 <>
                     <TitleComponent title="Happy Farming!" />
-                    <img style={{ height: "100%" }} src={meme} alt="meme" />
+                    <img src={meme} alt="meme" />
                     <Box sx={{ my: 2 }}>
                         You currently have <Purple>{farmingStake}</Purple>&nbsp;LP&nbsp;shares in the farm.
                     </Box>
@@ -472,7 +472,7 @@ export default function PageComponent(props: { page: number }) {
             sx={{
                 width: 1,
                 height: 1,
-                p: 4
+                p: 4,
             }}
             direction="column"
             justifyContent="space-evenly"
