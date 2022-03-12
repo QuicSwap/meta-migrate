@@ -1,5 +1,3 @@
-window.REFRESHER = []
-
 class Refresh {
     active: boolean | null = null
 

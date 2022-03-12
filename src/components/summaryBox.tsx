@@ -1,6 +1,6 @@
 import * as React from "react"
 import Box from "@mui/material/Box"
-import { Grid, useTheme, Icon } from "@mui/material"
+import { Grid } from "@mui/material"
 import OctopusLogo from "../public/octopus_logo.png"
 export default function SummaryBox() {
     return (
@@ -10,7 +10,7 @@ export default function SummaryBox() {
                 fontStyle: "normal",
                 textAlign: "center",
                 color: "#000000",
-                justifyContent: "center",
+                justifyContent: "center"
             }}
         >
             <Box sx={{ fontWeight: 800, fontSize: "63px", lineHeight: "75px" }}>Go from 0% to 35% APY</Box>
