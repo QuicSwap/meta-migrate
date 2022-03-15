@@ -3,7 +3,7 @@ import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode } from "react"
 import { Refresh } from "../../utils/refresh"
-import meme from "../../memes/3.png"
+import meme from "../../memes/1.png"
 import { Break, Description, LineSpacing, Loading, Note, Purple } from "../../components/description"
 import { InputComponent, InputData } from "../../components/input"
 import LocateComponent from "../../components/locate"
@@ -108,7 +108,7 @@ export function getContent(page: number): ReactNode | null {
                     <TitleComponent title="stNEAR -> META" step={2} />
                     <StepComponent
                         title={"Buy META with stNEAR"}
-                        description={<Description></Description>}
+                        description={<Description>{}</Description>}
                         completed={refresh[1]}
                         action={() => {}}
                     />
@@ -128,7 +128,7 @@ export function getContent(page: number): ReactNode | null {
                     <TitleComponent title="Enter stNEAR <-> META farm" step={3} />
                     <StepComponent
                         title={"Provide liquidity & farm."}
-                        description={<Description></Description>}
+                        description={<Description>{}</Description>}
                         completed={refresh[2]}
                         action={() => {}}
                     />

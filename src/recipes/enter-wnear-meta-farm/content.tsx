@@ -31,7 +31,7 @@ export function getContent(page: number): ReactNode | null {
                     <TitleComponent title="NEAR -> wNEAR" step={1} />
                     <StepComponent
                         title={"Wrap NEAR"}
-                        description={<Description></Description>}
+                        description={<Description>{}</Description>}
                         completed={refresh[0]}
                         action={() => {}}
                     />
@@ -51,7 +51,7 @@ export function getContent(page: number): ReactNode | null {
                     <TitleComponent title="wNEAR -> META" step={2} />
                     <StepComponent
                         title={"Buy META with wNEAR"}
-                        description={<Description></Description>}
+                        description={<Description>{}</Description>}
                         completed={refresh[1]}
                         action={() => {}}
                     />
@@ -71,7 +71,7 @@ export function getContent(page: number): ReactNode | null {
                     <TitleComponent title="Enter wNEAR <-> META farm" step={3} />
                     <StepComponent
                         title={"Provide liquidity & farm."}
-                        description={<Description></Description>}
+                        description={<Description>{}</Description>}
                         completed={refresh[2]}
                         action={() => {}}
                     />
