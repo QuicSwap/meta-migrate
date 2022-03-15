@@ -89,9 +89,10 @@ export function RecipePage() {
     const page = getPage()
     const [, forceUpdate] = useReducer(x => x + 1, 0)
     window.updateApp = forceUpdate
+    if (!params.recipeId || parseInt(params.recipeId) === null) return <></>
     return (
         <>
-            {page === 0 ? <SummaryBox /> : <></>}
+            {page === 0 && params.recipeId === "1" ? <SummaryBox /> : <></>}
             <Grid
                 container
                 sx={{
@@ -118,7 +119,7 @@ export function RecipePage() {
                     xs={2}
                 >
                     <WalletComponent />
-                    <TimelineComponent />
+                    <TimelineComponent steps={recipes[parseInt(params.recipeId!)].steps} />
                 </Grid>
                 <Grid
                     item
@@ -181,7 +182,7 @@ export function CatalogPage() {
                     }}
                     elevation={2}
                 >
-                    <h3 style={{marginTop: 0}}>{r.title}</h3>
+                    <h3 style={{ marginTop: 0 }}>{r.title}</h3>
                     <div>{r.description}</div>
                     <NavLink to={`/${r.id}`} key={r.id}>
                         <Button

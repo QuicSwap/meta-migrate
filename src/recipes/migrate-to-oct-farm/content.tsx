@@ -2,7 +2,7 @@ import { Box, Icon } from "@mui/material"
 import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode } from "react"
-import meme from "../../meme.png"
+import meme from "../../memes/1.png"
 import {
     addLiquidityAndStake,
     calcLpSharesFromAmounts,
@@ -55,6 +55,8 @@ let NEAR: {
 
 let stakeInput: InputData, OCTInput: InputData, stNEARInput: InputData
 let refresh: Refresh[] = []
+
+export const steps: string[] = ["old position", "convert", "new position", "profit"]
 
 export function getContent(page: number): ReactNode | null {
     switch (page) {
@@ -123,18 +125,20 @@ export function getContent(page: number): ReactNode | null {
                         test: (value: string) =>
                             NEAR.minDepositAmount !== undefined &&
                             BigInt(utils.format.parseNearAmount(value) ?? "0") < BigInt(NEAR.minDepositAmount),
-                        msg: `Staking with MetaPool requires a minimum deposit of ${yton(
-                            NEAR.minDepositAmount!,
-                            2
-                        )} $NEAR.`
+                        msg: () =>
+                            `Staking with MetaPool requires a minimum deposit of ${yton(
+                                NEAR.minDepositAmount!,
+                                2
+                            )} $NEAR.`
                     },
                     {
                         test: (value: string) =>
                             NEAR.nativeNEARBalance !== undefined &&
                             BigInt(utils.format.parseNearAmount(value) ?? "0") > BigInt(NEAR.nativeNEARBalance),
-                        msg: `Insufficient funds. You only have ${utils.format.formatNearAmount(
-                            NEAR.nativeNEARBalance!
-                        )} $NEAR in your wallet.`
+                        msg: () =>
+                            `Insufficient funds. You only have ${utils.format.formatNearAmount(
+                                NEAR.nativeNEARBalance!
+                            )} $NEAR in your wallet.`
                     }
                 ]
             })
@@ -201,9 +205,10 @@ export function getContent(page: number): ReactNode | null {
                                 NEAR.OCTBalanceOnRef !== undefined &&
                                 BigInt(utils.format.parseNearAmount(value) ?? "0") >
                                     BigInt(NEAR.OCTBalanceOnRef + "000000"),
-                            msg: `Insufficient funds. You only have ${
-                                NEAR.OCTBalanceOnRef !== undefined ? yton(NEAR.OCTBalanceOnRef + "000000") : "..."
-                            } $OCT on Ref-finance.`
+                            msg: () =>
+                                `Insufficient funds. You only have ${
+                                    NEAR.OCTBalanceOnRef !== undefined ? yton(NEAR.OCTBalanceOnRef + "000000") : "..."
+                                } $OCT on Ref-finance.`
                         }
                     ]
                 })
@@ -218,9 +223,12 @@ export function getContent(page: number): ReactNode | null {
                                 NEAR.stNEARBalance !== undefined &&
                                 BigInt(utils.format.parseNearAmount(value) ?? "0") >
                                     BigInt(NEAR.stNEARBalanceOnRef) + BigInt(NEAR.stNEARBalance),
-                            msg: `Insufficient funds. You only have ${yton(
-                                (BigInt(NEAR.stNEARBalanceOnRef ?? "0") + BigInt(NEAR.stNEARBalance ?? "0")).toString()
-                            )} stNEAR in total.`
+                            msg: () =>
+                                `Insufficient funds. You only have ${yton(
+                                    (
+                                        BigInt(NEAR.stNEARBalanceOnRef ?? "0") + BigInt(NEAR.stNEARBalance ?? "0")
+                                    ).toString()
+                                )} stNEAR in total.`
                         }
                     ]
                 })

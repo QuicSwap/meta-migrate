@@ -44,7 +44,7 @@ const InputComponent = (props: {
                     : assert !== undefined && assert.some(a => a.test(unmatched))
                     ? assert!
                           .filter(a => a.test(unmatched))
-                          .map(a => a.msg)
+                          .map(a => a.msg())
                           .reduce((a, b) => a + "\n" + b)
                     : ""
             }
@@ -64,14 +64,14 @@ class InputData {
         unmatched: string
         error: boolean
         pattern?: RegExp
-        assert?: Array<{ test: (value: string) => boolean; msg: string }>
+        assert?: Array<{ test: (value: string) => boolean; msg: () => string }>
     }
 
     constructor(init: {
         value: string
         pattern?: RegExp
         type?: string
-        assert?: Array<{ test: (value: string) => boolean; msg: string }>
+        assert?: Array<{ test: (value: string) => boolean; msg: () => string }>
     }) {
         this.data = {
             ...init,
@@ -88,7 +88,7 @@ class InputData {
         this.data.value = pattern !== undefined ? (val.match(pattern) !== null ? val : fallback) : val
     }
 
-    setInputErrors(pattern?: RegExp, assert?: Array<{ test: (value: string) => boolean; msg: string }>) {
+    setInputErrors(pattern?: RegExp, assert?: Array<{ test: (value: string) => boolean; msg: () => string }>) {
         if (this.data.unmatched === undefined) return
 
         const error =
