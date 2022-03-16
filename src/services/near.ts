@@ -51,23 +51,12 @@ async function initNear() {
     window.account = window.walletAccount.account()
 }
 
-// get user stake in OCT<>wNEAR farm
-async function getOldFarmingStake(): Promise<string> {
+async function getFarmingStake(pool_id: number): Promise<string> {
     const seeds: any = await window.account.viewFunction(window.nearConfig.ADDRESS_REF_FARMING, "list_user_seeds", {
         account_id: window.account.accountId
     })
-    return seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${OLD_POOL_ID}`]
-        ? seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${OLD_POOL_ID}`]
-        : "0"
-}
-
-// get user stake in OCT<>stNEAR farm
-async function getNewFarmingStake(): Promise<string> {
-    const seeds: any = await window.account.viewFunction(window.nearConfig.ADDRESS_REF_FARMING, "list_user_seeds", {
-        account_id: window.account.accountId
-    })
-    return seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`]
-        ? seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${NEW_POOL_ID}`]
+    return seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${pool_id}`]
+        ? seeds[`${window.nearConfig.ADDRESS_REF_EXCHANGE}@${pool_id}`]
         : "0"
 }
 
@@ -78,7 +67,7 @@ async function getOldPosition(): Promise<{
     total_shares: string
     min_amounts: string[]
 }> {
-    const [user_farm_shares, pool_info] = await Promise.all([getOldFarmingStake(), getOldPoolInfo()])
+    const [user_farm_shares, pool_info] = await Promise.all([getFarmingStake(OLD_POOL_ID), getOldPoolInfo()])
 
     const user_total_shares = (BigInt(user_farm_shares) + BigInt(pool_info.user_shares)).toString()
 
@@ -368,6 +357,7 @@ async function wnearToNear(wnear_amount: string): Promise<nearAPI.transactions.T
     const wnearStorage: any = await window.account.viewFunction(window.nearConfig.ADDRESS_WNEAR, "storage_balance_of", {
         account_id: window.account.accountId
     })
+
     if (!wnearStorage || BigInt(wnearStorage.total) <= BigInt("0")) {
         wNearActions_1.push(
             nearAPI.transactions.functionCall("storage_deposit", {}, 30_000_000_000_000, NEW_ACCOUNT_STORAGE_COST)
@@ -399,18 +389,41 @@ async function wnearToNear(wnear_amount: string): Promise<nearAPI.transactions.T
 }
 
 // stake NEAR with metapool to get stNEAR
-async function nearToStnear(near_amount: string): Promise<void> {
+async function nearToStnear(near_amount: string): Promise<nearAPI.transactions.Transaction[]> {
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
     const metapoolActions: nearAPI.transactions.Action[] = []
 
     // deposit NEAR to metapool
     metapoolActions.push(nearAPI.transactions.functionCall("deposit_and_stake", {}, 50_000_000_000_000, near_amount))
 
-    const TX = await makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions)
+    preTXs.push(makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions))
 
-    window.walletAccount.requestSignTransactions({
-        transactions: [TX],
-        callbackUrl: window.location.href
+    const TXs = await Promise.all(preTXs)
+    return TXs
+}
+
+async function nearToWnear(near_amount: string): Promise<nearAPI.transactions.Transaction[]> {
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
+    const wNearActions: nearAPI.transactions.Action[] = []
+
+    // query user storage balance on wNEAR contract
+    const wnearStorage: any = await window.account.viewFunction(window.nearConfig.ADDRESS_WNEAR, "storage_balance_of", {
+        account_id: window.account.accountId
     })
+
+    if (!wnearStorage || BigInt(wnearStorage.total) <= BigInt("0")) {
+        wNearActions.push(
+            nearAPI.transactions.functionCall("storage_deposit", {}, 30_000_000_000_000, NEW_ACCOUNT_STORAGE_COST)
+        )
+    }
+
+    // deposit NEAR to metapool
+    wNearActions.push(nearAPI.transactions.functionCall("near_deposit", {}, 50_000_000_000_000, near_amount))
+
+    preTXs.push(makeTransaction(window.nearConfig.ADDRESS_METAPOOL, wNearActions))
+
+    const TXs = await Promise.all(preTXs)
+    return TXs
 }
 
 // get stNEAR price and min deposit amount in $NEAR
@@ -456,6 +469,7 @@ async function getOctBalanceOnRef(): Promise<string> {
 
 // deposit stNEAR then add liquidity to OCT<>stNEAR pool
 async function addLiquidity(amount_stnear: string, lp_amounts: string[]): Promise<nearAPI.transactions.Transaction[]> {
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
     const metapoolActions: nearAPI.transactions.Action[] = []
     // use this to increase storage balance on ref before depositing stNEAR
     const refActions_1: nearAPI.transactions.Action[] = []
@@ -522,7 +536,6 @@ async function addLiquidity(amount_stnear: string, lp_amounts: string[]): Promis
         )
     )
 
-    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
     if (refActions_1.length > 0) {
         preTXs.push(makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_1))
     }
@@ -532,6 +545,90 @@ async function addLiquidity(amount_stnear: string, lp_amounts: string[]): Promis
     preTXs.push(makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_2))
     const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
 
+    return TXs
+}
+
+/**
+ * deposit multiple tokens on Ref.
+ * Assumptions:
+ * 1- ref-finance contract already has storage deposit on provided tokens
+ * 2- provided tokens are on the ref-finance global whitelist
+ *
+ * !! IMPORTANT !!
+ * if you want to deposit multiple tokens at once, then:
+ * @example good: all tokens in 1 call
+ * depositTokensOnRef([{token: "dai", amount: "1"}, {token: "usdt", amount: "1"}])
+ * @example bad: separate calls miscalculate required user storage on ref-finance
+ * depositTokensOnRef([{token: "dai", amount: "1"}])
+ * depositTokensOnRef([{token: "usdt", amount: "1"}])
+ *
+ *
+ * @param deposits
+ */
+async function depositTokensOnRef(
+    deposits: { token: string; amount: string }[]
+): Promise<nearAPI.transactions.Transaction[]> {
+    const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
+    const tokensActions: {
+        address: string
+        actions: nearAPI.transactions.Action[]
+    }[] = []
+
+    // increase user storage balance on ref before token deposits
+    const refActions: nearAPI.transactions.Action[] = []
+
+    // query user storage on ref
+    const storage_balance: any = await window.account.viewFunction(
+        window.nearConfig.ADDRESS_REF_EXCHANGE,
+        "storage_balance_of",
+        {
+            account_id: window.account.accountId
+        }
+    )
+
+    // check if user storage is enough for depositing n tokens
+    if (
+        storage_balance === null ||
+        BigInt(storage_balance.available) <= BigInt(deposits.length) * BigInt(MIN_DEPOSIT_PER_TOKEN)
+    ) {
+        refActions.push(
+            nearAPI.transactions.functionCall(
+                "storage_deposit", // contract method to deposit NEAR for wNEAR
+                {},
+                20_000_000_000_000, // attached gas
+                (BigInt(deposits.length) * BigInt(ONE_MORE_DEPOSIT_AMOUNT)).toString() // amount of NEAR to deposit and wrap
+            )
+        )
+    }
+
+    for (let i = 0; i < deposits.length; i++) {
+        tokensActions.push({
+            address: deposits[i].token,
+            actions: [
+                nearAPI.transactions.functionCall(
+                    "ft_transfer_call",
+                    {
+                        receiver_id: window.nearConfig.ADDRESS_REF_EXCHANGE,
+                        amount: deposits[i].amount,
+                        msg: ""
+                    },
+                    150_000_000_000_000,
+                    "1" // one yocto
+                )
+            ]
+        })
+    }
+
+    // transaction object for ref-finance storage deposit (if needed)
+    if (refActions.length >= 1) {
+        preTXs.push(makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions))
+    }
+    // transaction objects for deposits. Each token deposit is a separate transaction
+    for (let i = 0; i < deposits.length; i++) {
+        preTXs.push(makeTransaction(tokensActions[i].address, tokensActions[i].actions))
+    }
+
+    const TXs = await Promise.all(preTXs)
     return TXs
 }
 
@@ -565,6 +662,14 @@ async function addLiquidityAndStake(
     })
 }
 
+// helpers
+
+function estimateStnearOut(amount: string, price: string, accuracy = 5): string {
+    return BigInt(price) === BigInt(0)
+        ? "0"
+        : (BigInt(amount + "0".repeat(accuracy)) / BigInt(price) / BigInt("1" + "0".repeat(accuracy))).toString()
+}
+
 async function makeTransaction(
     receiverId: string,
     actions: nearAPI.transactions.Action[],
@@ -593,13 +698,22 @@ async function makeTransaction(
     )
 }
 
+// Takes array of Transaction Promises and redirects the user to the wallet page to sign them.
+async function passToWallet(preTXs: Promise<nearAPI.transactions.Transaction[]>[]): Promise<void> {
+    const TXs = await Promise.all(preTXs)
+    window.walletAccount.requestSignTransactions({
+        transactions: TXs.flat(),
+        callbackUrl: window.location.href
+    })
+}
+
 // Loads nearAPI and this contract into window scope.
 
 export {
     initNear,
     getOldPosition,
     exitOldPosition,
-    getNewFarmingStake,
+    getFarmingStake,
     getNewPoolInfo,
     getWnearBalanceOnRef,
     getOctBalanceOnRef,
@@ -610,6 +724,10 @@ export {
     calcLpSharesFromAmounts,
     addLiquidityAndStake,
     nearToStnear,
+    nearToWnear,
+    passToWallet,
+    estimateStnearOut,
+    depositTokensOnRef,
     OLD_POOL_ID,
     NEW_POOL_ID
 }

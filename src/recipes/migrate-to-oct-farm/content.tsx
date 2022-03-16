@@ -9,7 +9,6 @@ import {
     exitOldPosition,
     getMetapoolInfo,
     getNativeNearBalance,
-    getNewFarmingStake,
     getNewPoolInfo,
     getOctBalanceOnRef,
     getOldPosition,
@@ -20,6 +19,7 @@ import {
     NEW_POOL_ID,
     OLD_POOL_ID
 } from "../../services/near"
+import { getNewFarmingStake } from "./logic"
 import { getMaxInvest, yton } from "../../utils/math"
 import { Refresh } from "../../utils/refresh"
 import { Break, Description, LineSpacing, Loading, Note, Purple } from "../../components/description"

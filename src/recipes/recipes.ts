@@ -1,7 +1,7 @@
 import { ReactNode } from "react"
 import * as MigrateToOCTFarm from "./migrate-to-oct-farm/content"
 import * as EnterStNEARMETAFarm from "./enter-stnear-meta-farm/content"
-import * as EnterWNEARMETAFarm from "./enter-wnear-meta-farm/content"
+import * as EnterStNEARWNEARFarm from "./enter-stnear-wnear-farm/content"
 
 type recipe = {
     id: number
@@ -30,8 +30,8 @@ const recipes: recipe[] = [
         id: 2,
         title: "Enter wNEAR <-> META farm",
         description: "Get 27% APY!",
-        content: EnterWNEARMETAFarm.getContent,
-        steps: EnterWNEARMETAFarm.steps
+        content: EnterStNEARWNEARFarm.getContent,
+        steps: EnterStNEARWNEARFarm.steps
     }
 ]
 

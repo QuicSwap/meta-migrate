@@ -10,7 +10,8 @@ import NavButtonComponent from "../../components/navbuttons"
 import StepComponent from "../../components/step"
 import TitleComponent from "../../components/title"
 import { yton } from "../../utils/math"
-import { getMetapoolInfo, getNativeNearBalance, nearToStnear } from "../../services/near"
+import { getMetapoolInfo, getNativeNearBalance, estimateStnearOut } from "../../services/near"
+import { stepOneAction } from "./logic"
 
 let NEAR: {
     nativeNEARBalance?: string
@@ -66,11 +67,10 @@ export function getContent(page: number): ReactNode | null {
             )
             // Define Values
             const balance = Loading(!!NEAR?.nativeNEARBalance, NEAR.nativeNEARBalance, s => yton(s)!)
-            const inStNEAR = Loading(!!NEAR?.stNEARPrice, NEAR.stNEARPrice, s =>
-                (stakeInput.data.error || !stakeInput.data.value
-                    ? 0
-                    : Number(BigInt(utils.format.parseNearAmount(stakeInput.data.value)! + "0000") / BigInt(s)) / 10000
-                ).toFixed(5)
+            const inStNEAR = Loading(
+                !!NEAR?.stNEARPrice && !stakeInput.data.error && !!stakeInput.data.value,
+                estimateStnearOut(utils.format.parseNearAmount(stakeInput.data.value ?? "0")!, NEAR.stNEARPrice ?? "0"),
+                s => yton(s)!
             )
             return (
                 <>
@@ -89,7 +89,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         completed={refresh[0]}
                         denied={stakeInput.data.error}
-                        action={() => nearToStnear(utils.format.parseNearAmount(stakeInput.data.value)!)}
+                        action={() => stepOneAction(utils.format.parseNearAmount(stakeInput.data.value)!)}
                     />
                     <NavButtonComponent next />
                 </>
