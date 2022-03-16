@@ -39,7 +39,7 @@ function yton(yoctoString: string, decimals: number = 5): string {
  */
 function addCommas(str: string) {
     let n = str.indexOf(".")
-    if (n == -1) n = str.length
+    if (n === -1) n = str.length
     n -= 4
     while (n >= 0) {
         str = str.slice(0, n + 1) + "," + str.slice(n + 1)

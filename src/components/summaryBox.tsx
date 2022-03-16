@@ -5,7 +5,6 @@ import OctopusLogo from "../public/octopus_logo.png"
 // const NoCorsProxy = require("no-cors-proxy")
 // const port = 3000
 // const host = "localhost"
-const url = "http://app.ref.finance/farms"
 
 export default function SummaryBox() {
     const [percentage, setPercentage] = useState(29)
@@ -19,7 +18,7 @@ export default function SummaryBox() {
         async function getPercentage() {
             try {
                 let percentage = Number(await getFarmAPR())
-                if (isNaN(percentage) || percentage == 0) {
+                if (isNaN(percentage) || percentage === 0) {
                     percentage = 25
                 }
                 setPercentage(percentage)

@@ -7,7 +7,7 @@ const InputComponent = (props: {
     type?: string
     onChange?: (value: string) => void
 }) => {
-    const { value, unmatched, error, pattern, assert } = props.data.data
+    const { unmatched, error, pattern, assert } = props.data.data
     props.data.setInputErrors(pattern, assert)
     return (
         <TextField

@@ -1,15 +1,12 @@
-import { Box, Icon } from "@mui/material"
-import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode } from "react"
-import { Refresh } from "../../utils/refresh"
-import meme from "../../memes/2.gif"
-import { Break, Description, LineSpacing, Loading, Note, Purple } from "../../components/description"
-import { InputComponent, InputData } from "../../components/input"
+import { Description } from "../../components/description"
 import LocateComponent from "../../components/locate"
 import NavButtonComponent from "../../components/navbuttons"
 import StepComponent from "../../components/step"
 import TitleComponent from "../../components/title"
+import meme from "../../memes/2.gif"
+import { Refresh } from "../../utils/refresh"
 
 let NEAR: {} = {}
 
