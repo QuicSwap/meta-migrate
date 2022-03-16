@@ -1,17 +1,15 @@
 import * as React from "react"
-import { Grid, useTheme, Button, Icon, Box } from "@mui/material"
+import { Grid, Button, Icon, Box } from "@mui/material"
 import RecipesLogo from "../public/logo.svg"
+import { NavLink } from "react-router-dom"
 export default function Header() {
-    const theme = useTheme() as any
     return (
         <Grid sx={{ margin: 4 }}>
             <header>
-                <img src={RecipesLogo} alt=""></img>
-                <Box
-                    className="back"
-                    component="span"
-                    justifyContent="flex-end"
-                >
+                <NavLink to={"/"}>
+                    <img src={RecipesLogo} alt=""></img>
+                </NavLink>
+                <Box className="back" component="span" justifyContent="flex-end">
                     <Button
                         variant="outlined"
                         sx={{

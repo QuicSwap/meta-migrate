@@ -15,7 +15,7 @@ function getColor(page: number): "grey" | "primary" | "success" {
     return "grey"
 }
 
-export default function TimelineComponent() {
+export default function TimelineComponent(props: { steps: string[] }) {
     return (
         <Timeline
             sx={{
@@ -30,36 +30,18 @@ export default function TimelineComponent() {
             }}
             position="left"
         >
-            <TimelineItem onClick={() => jumpTo(0)}>
+            {props.steps.map((s, i) => (
+                <TimelineItem onClick={() => jumpTo(i)}>
+                    <TimelineSeparator>
+                        <TimelineDot color={getColor(i)} />
+                        {i !== props.steps.length - 1 ? <TimelineConnector /> : <></>}
+                    </TimelineSeparator>
+                    <TimelineContent>{s.toUpperCase()}</TimelineContent>
+                </TimelineItem>
+            ))}
+            <TimelineItem onClick={() => jumpTo(props.steps.length)}>
                 <TimelineSeparator>
-                    <TimelineDot color={getColor(0)} />
-                    <TimelineConnector />
-                </TimelineSeparator>
-                <TimelineContent>OLD POSITION</TimelineContent>
-            </TimelineItem>
-            <TimelineItem onClick={() => jumpTo(1)}>
-                <TimelineSeparator>
-                    <TimelineDot color={getColor(1)} />
-                    <TimelineConnector />
-                </TimelineSeparator>
-                <TimelineContent>CONVERT</TimelineContent>
-            </TimelineItem>
-            <TimelineItem onClick={() => jumpTo(2)}>
-                <TimelineSeparator>
-                    <TimelineDot color={getColor(2)} />
-                    <TimelineConnector />
-                </TimelineSeparator>
-                <TimelineContent>NEW POSITION</TimelineContent>
-            </TimelineItem>
-            <TimelineItem onClick={() => jumpTo(3)}>
-                <TimelineSeparator>
-                    <TimelineDot color={getColor(3)} />
-                </TimelineSeparator>
-                <TimelineContent>PROFIT</TimelineContent>
-            </TimelineItem>
-            <TimelineItem onClick={() => jumpTo(4)}>
-                <TimelineSeparator>
-                    <TimelineDot color={getColor(4)} />
+                    <TimelineDot color={getColor(props.steps.length)} />
                 </TimelineSeparator>
                 <TimelineContent>LOCATE MY FUNDS</TimelineContent>
             </TimelineItem>

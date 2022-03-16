@@ -7,7 +7,7 @@ function signIn() {
 
 function signOut() {
     window.walletAccount.signOut()
-    window.FORCEUPDATE()
+    window.updateApp()
 }
 
 export default function WalletComponent() {
@@ -28,9 +28,7 @@ export default function WalletComponent() {
             }}
             startIcon={<Icon>account_balance_wallet</Icon>}
         >
-            {window.walletAccount.isSignedIn()
-                ? `${window.walletAccount.getAccountId()}`
-                : `Sign In`}
+            {window.walletAccount.isSignedIn() ? `${window.walletAccount.getAccountId()}` : `Sign In`}
         </Button>
     )
 }

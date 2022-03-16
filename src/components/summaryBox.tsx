@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react"
 import Box from "@mui/material/Box"
-import { Grid, useTheme, Icon } from "@mui/material"
+import { Grid } from "@mui/material"
 import OctopusLogo from "../public/octopus_logo.png"
 // const NoCorsProxy = require("no-cors-proxy")
 // const port = 3000
 // const host = "localhost"
 const url = "http://app.ref.finance/farms"
 
-export default function SummaryBox(props: { page: number }) {
-    const theme = useTheme() as any
+export default function SummaryBox() {
     const [percentage, setPercentage] = useState(29)
 
     async function getFarmAPR(): Promise<string> {
-        const narwalletsResponse: Response = await fetch(
-            "https://validators.narwallets.com/metrics_json"
-        )
+        const narwalletsResponse: Response = await fetch("https://validators.narwallets.com/metrics_json")
         const jsonResponse = await narwalletsResponse.json()
         return jsonResponse.ref_oct_st_near_apr
     }
@@ -24,7 +21,7 @@ export default function SummaryBox(props: { page: number }) {
                 let percentage = Number(await getFarmAPR())
                 if (isNaN(percentage) || percentage == 0) {
                     percentage = 25
-                } 
+                }
                 setPercentage(percentage)
             } catch (ex) {
                 alert("Error")
@@ -32,17 +29,13 @@ export default function SummaryBox(props: { page: number }) {
         }
         getPercentage()
     }, [percentage])
-    return props.page > 0 ? (
-        <></>
-    ) : (
+    return (
         <Grid
             className="title"
             sx={{
                 fontFamily: "Inter",
                 fontStyle: "normal",
-
                 textAlign: "center",
-
                 color: "#000000",
                 justifyContent: "center"
             }}

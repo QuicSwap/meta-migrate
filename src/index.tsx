@@ -2,13 +2,21 @@ import React from "react"
 import ReactDOM from "react-dom"
 import "./index.css"
 import reportWebVitals from "./reportWebVitals"
-import App from "./App"
+import App, { CatalogPage, RecipePage } from "./App"
 import * as buffer from "buffer"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
 ;(window as any).Buffer = buffer.Buffer // https://github.com/isaacs/core-util-is/issues/27#issuecomment-878969583
 
 ReactDOM.render(
     <React.StrictMode>
-        <App />
+        <BrowserRouter basename="/dapp/mainnet/meta-recipes">
+            <Routes>
+                <Route path="/" element={<App />}>
+                    <Route path="/" element={<CatalogPage />} />
+                    <Route path=":recipeId" element={<RecipePage />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
     </React.StrictMode>,
     document.getElementById("root")
 )

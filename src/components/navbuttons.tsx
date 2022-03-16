@@ -2,10 +2,7 @@ import * as React from "react"
 import { Button, Grid, Icon } from "@mui/material"
 import { getPage, jumpTo } from "../utils/navigation"
 
-export default function NavButtonComponent(props: {
-    next?: boolean
-    back?: boolean
-}) {
+export default function NavButtonComponent(props: { next?: boolean; back?: boolean }) {
     return (
         <Grid
             item
@@ -13,9 +10,7 @@ export default function NavButtonComponent(props: {
                 mb: 4,
                 width: 0.9,
                 display: "flex",
-                justifyContent: (props.next ? !props.back : props.back)
-                    ? "space-between"
-                    : "space-between"
+                justifyContent: (props.next ? !props.back : props.back) ? "space-between" : "space-between"
             }}
         >
             {props.back ? (
