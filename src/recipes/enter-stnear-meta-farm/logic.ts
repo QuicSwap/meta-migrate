@@ -1,8 +1,12 @@
 import * as nearAPI from "near-api-js"
-import { passToWallet, nearToStnear } from "../../services/near"
+import BaseLogic from "../../services/near"
 
-function stepOneAction(amount: string) {
-    passToWallet([nearToStnear(amount)])
+export default class Logic extends BaseLogic {
+    nativeNEARBalance?: string
+    minDepositAmount?: string
+    stNEARPrice?: string
+
+    stepOneAction(amount: string) {
+        this.passToWallet([this.nearToStnear(amount)])
+    }
 }
-
-export { stepOneAction }

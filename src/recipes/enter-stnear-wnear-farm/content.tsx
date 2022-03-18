@@ -10,12 +10,9 @@ import meme from "../../memes/2.gif"
 import { Refresh } from "../../utils/refresh"
 import { utils } from "near-api-js"
 import { yton } from "../../utils/math"
-import { getMetapoolInfo, getNativeNearBalance } from "../../services/near"
+import Logic from "./logic"
 
-let NEAR: {
-    minDepositAmount?: string
-    nativeNEARBalance?: string
-} = {}
+const NEAR = new Logic()
 
 let allowanceInput: InputData
 let refresh: Refresh[] = []
@@ -56,7 +53,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Refresh
             refresh[0] ??= new Refresh(
                 () =>
-                    Promise.all([getMetapoolInfo(), getNativeNearBalance()]).then(res => {
+                    Promise.all([NEAR.getMetapoolInfo(), NEAR.getNativeNearBalance()]).then(res => {
                         NEAR.minDepositAmount = res[0].min_deposit_amount
                         NEAR.nativeNEARBalance = res[1]
                         return BigInt(NEAR.nativeNEARBalance) < BigInt(2) * BigInt(NEAR.minDepositAmount)
@@ -96,7 +93,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Inputs
             // -
             // Define Refresh
-            refresh[1] ??= new Refresh(() => Promise.resolve(false))
+            // -
             // Define Values
             // -
             return (
@@ -111,7 +108,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Inputs
             // -
             // Define Refresh
-            refresh[2] ??= new Refresh(() => Promise.resolve(false))
+            // -
             // Define Values
             const rows: {
                 location: string

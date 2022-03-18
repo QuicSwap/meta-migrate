@@ -6,7 +6,7 @@ import Header from "./components/header"
 import { Box, Button, Grid, Icon, Paper } from "@mui/material"
 import { useReducer } from "react"
 import WalletComponent from "./components/wallet"
-import { initNear } from "./services/near"
+import BaseLogic from "./services/near"
 import { getPage } from "./utils/navigation"
 import { NavLink, Outlet, useParams } from "react-router-dom"
 import PageComponent from "./components/page"
@@ -62,7 +62,7 @@ const theme = createTheme({
     spacing: 8
 })
 
-window.nearInitPromise = initNear().then(window.updateApp)
+window.nearInitPromise = BaseLogic.initNear().then(window.updateApp)
 
 export default function App() {
     return (

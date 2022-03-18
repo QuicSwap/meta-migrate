@@ -10,14 +10,9 @@ import NavButtonComponent from "../../components/navbuttons"
 import StepComponent from "../../components/step"
 import TitleComponent from "../../components/title"
 import { yton } from "../../utils/math"
-import { getMetapoolInfo, getNativeNearBalance, estimateStnearOut } from "../../services/near"
-import { stepOneAction } from "./logic"
+import Logic from "./logic"
 
-let NEAR: {
-    nativeNEARBalance?: string
-    minDepositAmount?: string
-    stNEARPrice?: string
-} = {}
+const NEAR = new Logic()
 
 let stakeInput: InputData
 let refresh: Refresh[] = []
@@ -57,7 +52,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Refresh
             refresh[0] ??= new Refresh(
                 () =>
-                    Promise.all([getNativeNearBalance(), getMetapoolInfo()]).then(res => {
+                    Promise.all([NEAR.getNativeNearBalance(), NEAR.getMetapoolInfo()]).then(res => {
                         NEAR.nativeNEARBalance = res[0]
                         NEAR.stNEARPrice = res[1].st_near_price
                         NEAR.minDepositAmount = res[1].min_deposit_amount
@@ -69,7 +64,10 @@ export function getContent(page: number): ReactNode | null {
             const balance = Loading(!!NEAR?.nativeNEARBalance, NEAR.nativeNEARBalance, s => yton(s)!)
             const inStNEAR = Loading(
                 !!NEAR?.stNEARPrice && !stakeInput.data.error && !!stakeInput.data.value,
-                estimateStnearOut(utils.format.parseNearAmount(stakeInput.data.value ?? "0")!, NEAR.stNEARPrice ?? "0"),
+                NEAR.estimateStnearOut(
+                    utils.format.parseNearAmount(stakeInput.data.value ?? "0")!,
+                    NEAR.stNEARPrice ?? "0"
+                ),
                 s => yton(s)!
             )
             return (
@@ -89,7 +87,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         completed={refresh[0]}
                         denied={stakeInput.data.error}
-                        action={() => stepOneAction(utils.format.parseNearAmount(stakeInput.data.value)!)}
+                        action={() => NEAR.stepOneAction(utils.format.parseNearAmount(stakeInput.data.value)!)}
                     />
                     <NavButtonComponent next />
                 </>

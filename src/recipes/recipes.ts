@@ -28,7 +28,7 @@ const recipes: recipe[] = [
     },
     {
         id: 2,
-        title: "Enter wNEAR <-> META farm",
+        title: "Enter stNEAR <-> wNEAR farm",
         description: "Get 27% APY!",
         content: EnterStNEARWNEARFarm.getContent,
         steps: EnterStNEARWNEARFarm.steps

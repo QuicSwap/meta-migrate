@@ -3,23 +3,7 @@ import { utils } from "near-api-js"
 import * as React from "react"
 import { ReactNode } from "react"
 import meme from "../../memes/1.png"
-import {
-    addLiquidityAndStake,
-    calcLpSharesFromAmounts,
-    exitOldPosition,
-    getMetapoolInfo,
-    getNativeNearBalance,
-    getNewPoolInfo,
-    getOctBalanceOnRef,
-    getOldPosition,
-    getStnearBalance,
-    getStnearBalanceOnRef,
-    getWnearBalanceOnRef,
-    nearToStnear,
-    NEW_POOL_ID,
-    OLD_POOL_ID
-} from "../../services/near"
-import { getNewFarmingStake } from "./logic"
+import Logic from "./logic"
 import { getMaxInvest, yton } from "../../utils/math"
 import { Refresh } from "../../utils/refresh"
 import { Break, Description, LineSpacing, Loading, Note, Purple } from "../../components/description"
@@ -29,32 +13,10 @@ import NavButtonComponent from "../../components/navbuttons"
 import StepComponent from "../../components/step"
 import TitleComponent from "../../components/title"
 
-let NEAR: {
-    newFarmingStake?: string
-    oldPosition?: {
-        user_total_shares: string
-        user_farm_shares: string
-        user_lp_shares: string
-        total_shares: string
-        min_amounts: string[]
-    }
-    newPoolInfo?: {
-        user_shares: string
-        total_shares: string
-        amounts: string[]
-    }
-    stNEARPrice?: string
-    minDepositAmount?: string
-    wNEARBalanceOnRef?: string
-    OCTBalanceOnRef?: string
-    stNEARBalanceOnRef?: string
-    stNEARBalance?: string
-    nativeNEARBalance?: string
-    lpSharesToStake?: string
-} = {}
-
 let stakeInput: InputData, OCTInput: InputData, stNEARInput: InputData
 let refresh: Refresh[] = []
+
+const NEAR = new Logic()
 
 export const steps: string[] = ["old position", "convert", "new position", "profit"]
 
@@ -65,7 +27,7 @@ export function getContent(page: number): ReactNode | null {
             // -
             // Define Refresh
             refresh[0] ??= new Refresh(() =>
-                getOldPosition().then(res => {
+                NEAR.getOldPosition().then(res => {
                     NEAR.oldPosition = res
                     return BigInt(res.user_lp_shares) === BigInt("0") && BigInt(res.user_farm_shares) === BigInt("0")
                 })
@@ -104,7 +66,7 @@ export function getContent(page: number): ReactNode | null {
                         action={() => {
                             localStorage.setItem("OCTminAmountOut", NEAR.oldPosition!.min_amounts[0])
                             localStorage.setItem("wNEARminAmountOut", NEAR.oldPosition!.min_amounts[1])
-                            exitOldPosition(
+                            NEAR.exitOldPosition(
                                 NEAR.oldPosition!.user_farm_shares,
                                 NEAR.oldPosition!.user_total_shares,
                                 NEAR.oldPosition!.min_amounts
@@ -145,7 +107,11 @@ export function getContent(page: number): ReactNode | null {
             // Define Refresh
             refresh[1] ??= new Refresh(
                 () =>
-                    Promise.all([getNativeNearBalance(), getWnearBalanceOnRef(), getMetapoolInfo()]).then(res => {
+                    Promise.all([
+                        NEAR.getNativeNearBalance(),
+                        NEAR.getWnearBalanceOnRef(),
+                        NEAR.getMetapoolInfo()
+                    ]).then(res => {
                         NEAR.nativeNEARBalance = res[0]
                         NEAR.wNEARBalanceOnRef = res[1]
                         NEAR.stNEARPrice = res[2].st_near_price
@@ -180,7 +146,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         completed={refresh[1]}
                         denied={stakeInput.data.error}
-                        action={() => nearToStnear(utils.format.parseNearAmount(stakeInput.data.value)!)}
+                        action={() => NEAR.nearToStnear(utils.format.parseNearAmount(stakeInput.data.value)!)}
                     />
                     <NavButtonComponent next back />
                 </>
@@ -233,7 +199,7 @@ export function getContent(page: number): ReactNode | null {
                     ]
                 })
 
-                NEAR.lpSharesToStake = calcLpSharesFromAmounts(
+                NEAR.lpSharesToStake = NEAR.calcLpSharesFromAmounts(
                     NEAR.newPoolInfo.total_shares,
                     NEAR.newPoolInfo.amounts,
                     [
@@ -248,15 +214,18 @@ export function getContent(page: number): ReactNode | null {
             }
             // Define Refresh
             refresh[2] ??= new Refresh(() =>
-                Promise.all([getNewPoolInfo(), getOctBalanceOnRef(), getStnearBalanceOnRef(), getStnearBalance()]).then(
-                    res => {
-                        NEAR.newPoolInfo = res[0]
-                        NEAR.OCTBalanceOnRef = res[1]
-                        NEAR.stNEARBalanceOnRef = res[2]
-                        NEAR.stNEARBalance = res[3]
-                        return false
-                    }
-                )
+                Promise.all([
+                    NEAR.getNewPoolInfo(),
+                    NEAR.getOctBalanceOnRef(),
+                    NEAR.getStnearBalanceOnRef(),
+                    NEAR.getStnearBalance()
+                ]).then(res => {
+                    NEAR.newPoolInfo = res[0]
+                    NEAR.OCTBalanceOnRef = res[1]
+                    NEAR.stNEARBalanceOnRef = res[2]
+                    NEAR.stNEARBalance = res[3]
+                    return false
+                })
             )
             // Define Values
             const OCTBalance = Loading(!!NEAR.OCTBalanceOnRef, NEAR.OCTBalanceOnRef + "000000", s => yton(s)!)
@@ -332,7 +301,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         completed={refresh[2]}
                         action={() => {
-                            addLiquidityAndStake(
+                            NEAR.addLiquidityAndStake(
                                 (
                                     BigInt(utils.format.parseNearAmount(stNEARInput.data.value)!) -
                                     BigInt(NEAR.stNEARBalanceOnRef!)
@@ -357,7 +326,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Refresh
             refresh[3] ??= new Refresh(
                 () =>
-                    getNewFarmingStake().then(res => {
+                    NEAR.getNewFarmingStake().then(res => {
                         NEAR.newFarmingStake = res
                         return true
                     }),
@@ -383,14 +352,14 @@ export function getContent(page: number): ReactNode | null {
             refresh[4] ??= new Refresh(
                 () =>
                     Promise.all([
-                        getOldPosition(),
-                        getWnearBalanceOnRef(),
-                        getStnearBalanceOnRef(),
-                        getOctBalanceOnRef(),
-                        getStnearBalance(),
-                        getNativeNearBalance(),
-                        getNewPoolInfo(),
-                        getNewFarmingStake()
+                        NEAR.getOldPosition(),
+                        NEAR.getWnearBalanceOnRef(),
+                        NEAR.getStnearBalanceOnRef(),
+                        NEAR.getOctBalanceOnRef(),
+                        NEAR.getStnearBalance(),
+                        NEAR.getNativeNearBalance(),
+                        NEAR.getNewPoolInfo(),
+                        NEAR.getNewFarmingStake()
                     ]).then(res => {
                         NEAR.oldPosition = res[0]
                         NEAR.wNEARBalanceOnRef = res[1]
@@ -414,7 +383,7 @@ export function getContent(page: number): ReactNode | null {
                 },
                 {
                     location: "OCT <-> wNEAR Pool",
-                    link: `https://app.ref.finance/pool/${OLD_POOL_ID}`,
+                    link: `https://app.ref.finance/pool/${NEAR.OLD_POOL_ID}`,
                     amount: NEAR?.oldPosition?.user_lp_shares,
                     unit: "LP"
                 },
@@ -453,7 +422,7 @@ export function getContent(page: number): ReactNode | null {
                 },
                 {
                     location: "OCT <-> stNEAR Pool",
-                    link: `https://app.ref.finance/pool/${NEW_POOL_ID}`,
+                    link: `https://app.ref.finance/pool/${NEAR.NEW_POOL_ID}`,
                     amount: NEAR?.newPoolInfo?.user_shares,
                     unit: "LP"
                 },

@@ -1,67 +1,89 @@
 import * as nearAPI from "near-api-js"
-import {
-    nearToWnear,
-    nearToStnear,
-    depositTokensOnRef,
-    estimateStnearOut,
-    getMetapoolInfo,
-    getFarmingStake,
-    passToWallet
-} from "../../services/near"
+import BaseLogic from "../../services/near"
 
-const STNEAR_WNEAR_POOL_ID: number = 535
+export default class Logic extends BaseLogic {
+    STNEAR_WNEAR_POOL_ID: number = 535 // [ 'meta-pool.near', 'wrap.near' ]
 
-/**
- * take NEAR tokens, provide liquidity to wNear<>stNear, stake on farm
- *
- * @param allowance
- */
-async function stepOneAction(allowance: string): Promise<void> {
-    const preTXs: Promise<nearAPI.transactions.Transaction[]>[] = []
+    minDepositAmount?: string
+    nativeNEARBalance?: string
 
-    // recipe wraps one half of provided NEAR
-    const amountToWrap = (BigInt(allowance) / BigInt("2")).toString()
-    // recipe stakes one half of provided NEAR with metapool
-    const amountToStake = (BigInt(allowance) / BigInt("2")).toString()
-    // get stNear price and metapool minimum deposit amount
-    const metapoolInfo = await getMetapoolInfo()
-    // get expected amount of stNEAR user gets by staking amountToWrap
-    const estimatedStnearAmount = estimateStnearOut(amountToStake, metapoolInfo.st_near_price)
+    /**
+     * take NEAR tokens, provide liquidity to wNear<>stNear, stake on farm
+     *
+     * @param allowance
+     */
+    async stepOneAction(allowance: string): Promise<void> {
+        const preTXs: Promise<nearAPI.transactions.Transaction[]>[] = []
+        const TXs: nearAPI.transactions.Transaction[][] = []
 
-    // wrap half of provided NEAR tokens
-    preTXs.push(nearToWnear(amountToWrap))
-    // stake on metapool half of provided NEAR tokens
-    preTXs.push(nearToStnear(amountToStake))
-    // deposit both tokens on ref-finance
-    preTXs.push(
-        depositTokensOnRef([
-            { token: window.nearConfig.ADDRESS_METAPOOL, amount: estimatedStnearAmount },
-            { token: window.nearConfig.ADDRESS_WNEAR, amount: amountToWrap }
+        // recipe wraps one half of provided NEAR
+        const amountToWrap = (BigInt(allowance) / BigInt("2")).toString()
+        // recipe stakes one half of provided NEAR with metapool
+        const amountToStake = (BigInt(allowance) / BigInt("2")).toString()
+        // fetch metapool info and stNEAR<>wNEAR pool info
+        const [{ st_near_price }, { total_shares, amounts }] = await Promise.all([
+            this.getMetapoolInfo(),
+            this.getPoolInfo(this.STNEAR_WNEAR_POOL_ID)
         ])
-    )
-    // TODO: provide liquidity
+        // get expected amount of stNEAR user gets by staking amountToWrap
+        const estimatedStnearAmount = this.estimateStnearOut(amountToStake, st_near_price)
+        // estimate received LP shares
+        const lpShares: string = this.calcLpSharesFromAmounts(total_shares, amounts, [
+            estimatedStnearAmount,
+            amountToWrap
+        ])
 
-    // TODO: stake on farm
+        // estimate & pay ref-finance storage for our upcoming actions
+        // 2 token deposits and 1 new LP position
+        // !!IMPORTANT!! might return empty transaction, check before pushing to preTXs
+        const refStorageTX: nearAPI.transactions.Transaction[] = await this.payRefStorage({
+            lp_positions: 1,
+            token_deposits: 2
+        })
+        if (refStorageTX.length === 1 && refStorageTX[0].actions.length > 1) {
+            TXs.push(refStorageTX)
+        }
+        // wrap half of provided NEAR tokens
+        preTXs.push(this.nearToWnear(amountToWrap))
+        // stake on metapool half of provided NEAR tokens
+        preTXs.push(this.nearToStnear(amountToStake))
+        // deposit both tokens on ref-finance
+        preTXs.push(
+            this.depositTokensOnRef([
+                { token: window.nearConfig.ADDRESS_METAPOOL, amount: estimatedStnearAmount },
+                { token: window.nearConfig.ADDRESS_WNEAR, amount: amountToWrap }
+            ])
+        )
+        // TODO: provide liquidity
+        // stake on farm
+        preTXs.push(this.farmStake(lpShares, this.STNEAR_WNEAR_POOL_ID))
 
-    const TXs = await Promise.all(preTXs)
-    window.walletAccount.requestSignTransactions({
-        transactions: TXs.flat(),
-        callbackUrl: window.location.href
-    })
+        TXs.push(...(await Promise.all(preTXs)))
+        window.walletAccount.requestSignTransactions({
+            transactions: TXs.flat(),
+            callbackUrl: window.location.href
+        })
+
+        // How passToWallet deals with conditionally pushing preTXs ?
+        /*
+        this.passToWallet([
+            // wrap half of provided NEAR tokens
+            this.nearToWnear(amountToWrap),
+            // stake on metapool half of provided NEAR tokens
+            this.nearToStnear(amountToStake),
+            // deposit both tokens on ref-finance
+            this.depositTokensOnRef([
+                { token: window.nearConfig.ADDRESS_METAPOOL, amount: estimatedStnearAmount },
+                { token: window.nearConfig.ADDRESS_WNEAR, amount: amountToWrap }
+            ])
+            // TODO: provide liquidity
+            // TODO: stake on farm
+        ]);
+        */
+    }
+
+    async stnearWnearFarmingStake(): Promise<string> {
+        const stake_shares: string = await this.getFarmingStake(this.STNEAR_WNEAR_POOL_ID)
+        return stake_shares
+    }
 }
-
-async function stnearWnearFarmingStake(): Promise<string> {
-    const stake_shares: string = await getFarmingStake(STNEAR_WNEAR_POOL_ID)
-    return stake_shares
-}
-
-// function stepOneAction(allowance: string) {
-
-//     passToWallet([
-//         nearToWnear((BigInt(allowance) / BigInt("2")).toString()),
-//         nearToStnear((BigInt(allowance) / BigInt("2")).toString())
-//     ]);
-
-// }
-
-export { stepOneAction, stnearWnearFarmingStake }
