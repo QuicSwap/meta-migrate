@@ -178,21 +178,72 @@ export function CatalogPage() {
                         p: 2,
                         display: "flex",
                         flexFlow: "column nowrap",
-                        position: "relative"
+                        position: "relative",
+                        "&::before": {
+                            content: "''",
+                            position: "absolute",
+                            left: "-6rem",
+                            right: "calc(100% - 12px)",
+                            top: "0",
+                            bottom: "0",
+                            zIndex: "-1",
+                            borderRadius: "12px 0 0 12px",
+                            background: theme.palette.primary.main,
+                            opacity: 0.2
+                        }
                     }}
                     elevation={2}
                 >
+                    <h1
+                        style={{
+                            position: "absolute",
+                            left: "-6rem",
+                            right: "100%",
+                            top: "0",
+                            bottom: "0.5em",
+                            height: "fit-content",
+                            textAlign: "center",
+                            marginTop: "auto",
+                            marginBottom: "auto",
+                            color: theme.palette.primary.light
+                        }}
+                    >
+                        {r.apy()}
+                    </h1>
+                    <span
+                        style={{
+                            position: "absolute",
+                            left: "-6rem",
+                            right: "100%",
+                            bottom: "1em",
+                            height: "fit-content",
+                            textAlign: "center",
+                            fontWeight: "900",
+                            color: theme.palette.primary.light
+                        }}
+                    >
+                        APY
+                    </span>
                     <h3 style={{ marginTop: 0 }}>{r.title}</h3>
                     <div>{r.description}</div>
-                    <NavLink to={`/${r.id}`} key={r.id}>
+                    {r.comingsoon ? (
                         <Button
                             variant="outlined"
                             sx={{ borderRadius: "100px", position: "absolute", right: "16px", bottom: "16px" }}
-                            endIcon={<Icon>navigate_next</Icon>}
                         >
-                            START
+                            COMING SOON!
                         </Button>
-                    </NavLink>
+                    ) : (
+                        <NavLink to={`/${r.id}`} key={r.id}>
+                            <Button
+                                variant="outlined"
+                                sx={{ borderRadius: "100px", position: "absolute", right: "16px", bottom: "16px" }}
+                                endIcon={<Icon>navigate_next</Icon>}
+                            >
+                                START
+                            </Button>
+                        </NavLink>
+                    )}
                 </Paper>
             ))}
         </Grid>

@@ -1,6 +1,6 @@
 import { utils } from "near-api-js"
 import * as React from "react"
-import { ReactNode } from "react"
+import { ReactNode, useEffect, useState } from "react"
 import { Refresh } from "../../utils/refresh"
 import meme from "../../memes/1.png"
 import { Break, Description, Loading, Purple } from "../../components/description"
@@ -11,6 +11,7 @@ import StepComponent from "../../components/step"
 import TitleComponent from "../../components/title"
 import { yton } from "../../utils/math"
 import Logic from "./logic"
+import { getFarmAPR } from "../../utils/apr"
 
 const NEAR = new Logic()
 
@@ -166,4 +167,26 @@ export function getContent(page: number): ReactNode | null {
         default:
             return <TitleComponent title="Something went wrong" />
     }
+}
+
+export function APY() {
+    const [percentage, setPercentage] = useState("...")
+    useEffect(() => {
+        async function getPercentage() {
+            let percentage = (await getFarmAPR())?.ref_meta_st_near_apr;
+            if (isNaN(percentage) || percentage === 0) {
+                percentage = "..."
+            }
+            setPercentage(percentage)
+        }
+        getPercentage()
+    }, [percentage])
+    return (
+        <span>
+            { percentage !== "..."
+                ? Math.round(Number(percentage)) + "%"
+                : "..."
+            }
+        </span>
+    );
 }

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ReactNode } from "react"
+import { ReactNode, useEffect, useState } from "react"
 import { Description, Break } from "../../components/description"
 import { InputData, InputComponent } from "../../components/input"
 import LocateComponent from "../../components/locate"
@@ -11,6 +11,7 @@ import { Refresh } from "../../utils/refresh"
 import { utils } from "near-api-js"
 import { yton } from "../../utils/math"
 import Logic from "./logic"
+import { getFarmAPR } from "../../utils/apr"
 
 const NEAR = new Logic()
 
@@ -122,4 +123,26 @@ export function getContent(page: number): ReactNode | null {
         default:
             return <TitleComponent title="Something went wrong" />
     }
+}
+
+export function APY() {
+    const [percentage, setPercentage] = useState("...")
+    useEffect(() => {
+        async function getPercentage() {
+            let percentage = (await getFarmAPR())?.ref_oct_st_near_apr;
+            if (isNaN(percentage) || percentage === 0) {
+                percentage = "..."
+            }
+            setPercentage(percentage)
+        }
+        getPercentage()
+    }, [percentage])
+    return (
+        <span>
+            { percentage !== "..."
+                ? Math.round(Number(percentage)) + "%"
+                : "..."
+            }
+        </span>
+    );
 }

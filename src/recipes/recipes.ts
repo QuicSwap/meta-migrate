@@ -7,6 +7,8 @@ type recipe = {
     id: number
     title: string
     description: string
+    comingsoon?: boolean
+    apy: () =>  ReactNode | null,
     content: (page: number) => ReactNode | null
     steps: string[]
 }
@@ -16,6 +18,8 @@ const recipes: recipe[] = [
         id: 0,
         title: "Enter stNEAR <-> META farm",
         description: "Get 153% APY!",
+        comingsoon: true,
+        apy: EnterStNEARMETAFarm.APY,
         content: EnterStNEARMETAFarm.getContent,
         steps: EnterStNEARMETAFarm.steps
     },
@@ -23,6 +27,7 @@ const recipes: recipe[] = [
         id: 1,
         title: "Migrate wNEAR <-> OCT farm to stNEAR <-> OCT farm",
         description: "Get 35% APY!",
+        apy: MigrateToOCTFarm.APY,
         content: MigrateToOCTFarm.getContent,
         steps: MigrateToOCTFarm.steps
     },
@@ -30,6 +35,7 @@ const recipes: recipe[] = [
         id: 2,
         title: "Enter stNEAR <-> wNEAR farm",
         description: "Get 27% APY!",
+        apy: EnterStNEARWNEARFarm.APY,
         content: EnterStNEARWNEARFarm.getContent,
         steps: EnterStNEARWNEARFarm.steps
     }
