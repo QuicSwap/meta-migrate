@@ -23,7 +23,7 @@ export function getContent(page: number): ReactNode | null {
     switch (page) {
         case 0:
             // Define Inputs
-            if (NEAR.nativeNEARBalance !== undefined && NEAR.nativeNEARBalance !== undefined)
+            if (NEAR.minDepositAmount !== undefined && NEAR.nativeNEARBalance !== undefined)
                 allowanceInput ??= new InputData({
                     value: yton(NEAR.nativeNEARBalance!, 5),
                     pattern: /^\d+(\.\d{0,24})?$/,
@@ -74,14 +74,14 @@ export function getContent(page: number): ReactNode | null {
                                 finally the LP Shares are put into the stNEAR {"<->"} wNEAR farm. {""}
                                 <Break />
                                 <InputComponent
-                                    data={allowanceInput}
+                                    data={allowanceInput ?? new InputData({value: ""})}
                                     label="recipe allowance"
                                     type="number"
                                     unit="NEAR"
                                 />
                             </Description>
                         }
-                        denied={allowanceInput.data.error}
+                        denied={allowanceInput?.data.error}
                         completed={refresh[0]}
                         action={() => {}}
                     />
