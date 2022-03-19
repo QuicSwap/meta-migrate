@@ -13,9 +13,6 @@ export default class Logic extends BaseLogic {
      * @param allowance
      */
     async stepOneAction(allowance: string): Promise<void> {
-        const preTXs: Promise<nearAPI.transactions.Transaction[]>[] = []
-        const TXs: nearAPI.transactions.Transaction[][] = []
-
         // recipe wraps one half of provided NEAR
         const amountToWrap = (BigInt(allowance) / BigInt("2")).toString()
         // recipe stakes one half of provided NEAR with metapool
@@ -33,39 +30,6 @@ export default class Logic extends BaseLogic {
             amountToWrap
         ])
 
-        // estimate & pay ref-finance storage for our upcoming actions
-        // 2 token deposits and 1 new LP position
-        // !!IMPORTANT!! might return empty transaction, check before pushing to preTXs
-        const refStorageTX: nearAPI.transactions.Transaction[] = await this.payRefStorage({
-            lp_positions: 1,
-            token_deposits: 2
-        })
-        if (refStorageTX.length === 1 && refStorageTX[0].actions.length > 1) {
-            TXs.push(refStorageTX)
-        }
-        // wrap half of provided NEAR tokens
-        preTXs.push(this.nearToWnear(amountToWrap))
-        // stake on metapool half of provided NEAR tokens
-        preTXs.push(this.nearToStnear(amountToStake))
-        // deposit both tokens on ref-finance
-        preTXs.push(
-            this.depositTokensOnRef([
-                { token: window.nearConfig.ADDRESS_METAPOOL, amount: estimatedStnearAmount },
-                { token: window.nearConfig.ADDRESS_WNEAR, amount: amountToWrap }
-            ])
-        )
-        // TODO: provide liquidity
-        // stake on farm
-        preTXs.push(this.farmStake(lpShares, this.STNEAR_WNEAR_POOL_ID))
-
-        TXs.push(...(await Promise.all(preTXs)))
-        window.walletAccount.requestSignTransactions({
-            transactions: TXs.flat(),
-            callbackUrl: window.location.href
-        })
-
-        // How passToWallet deals with conditionally pushing preTXs ?
-        /*
         this.passToWallet([
             // wrap half of provided NEAR tokens
             this.nearToWnear(amountToWrap),
@@ -75,11 +39,12 @@ export default class Logic extends BaseLogic {
             this.depositTokensOnRef([
                 { token: window.nearConfig.ADDRESS_METAPOOL, amount: estimatedStnearAmount },
                 { token: window.nearConfig.ADDRESS_WNEAR, amount: amountToWrap }
-            ])
-            // TODO: provide liquidity
-            // TODO: stake on farm
-        ]);
-        */
+            ]),
+            // rovide liquidity to stNEAR<>wNEAR pool
+            this.addLiquidity([{ pool_id: this.STNEAR_WNEAR_POOL_ID, amounts: [estimatedStnearAmount, amountToWrap] }]),
+            // stake on farm
+            this.farmStake(lpShares, this.STNEAR_WNEAR_POOL_ID)
+        ])
     }
 
     async stnearWnearFarmingStake(): Promise<string> {

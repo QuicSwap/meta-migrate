@@ -93,10 +93,10 @@ export default class BaseLogic {
 
         // if user has LP shares on farm, unstake them
         if (BigInt(staked_amount) > BigInt("0")) {
-            preTXs.push(this.unstake(staked_amount))
+            preTXs.push(this.farmUnstake(staked_amount, this.OLD_POOL_ID))
         }
         // remove liquidity from OCT <-> wNEAR pool
-        preTXs.push(this.removeLiquidity(user_total_shares, min_amounts))
+        preTXs.push(this.removeLiquidityOctWnear(user_total_shares, min_amounts))
 
         // withdraw wNEAR from Ref and unwrap it
         preTXs.push(this.wnearToNear(min_amounts[1]))
@@ -109,7 +109,13 @@ export default class BaseLogic {
         })
     }
 
-    // stake farm shares in OCT<>stNEAR farm
+    /**
+     * stake ref-finance LP shares in ref-finance farm
+     *
+     * @param amount LP shares to stake
+     * @param poolID liquidity pool whose shares will be staked
+     * @returns
+     */
     async farmStake(amount: string, poolID: number): Promise<nearAPI.transactions.Transaction[]> {
         const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
         const storageActions: nearAPI.transactions.Action[] = []
@@ -162,8 +168,14 @@ export default class BaseLogic {
         return await Promise.all(preTXs)
     }
 
-    // unstake farm shares from OCT<>wNEAR farm
-    async unstake(amnt: string): Promise<nearAPI.transactions.Transaction[]> {
+    /**
+     * unstake shares from ref-finance farm
+     *
+     * @param amount
+     * @param poolID
+     * @returns
+     */
+    async farmUnstake(amount: string, poolID: number): Promise<nearAPI.transactions.Transaction[]> {
         const actions: nearAPI.transactions.Action[] = []
         // query user storage
         const storage_balance: any = await window.account.viewFunction(
@@ -189,8 +201,8 @@ export default class BaseLogic {
             nearAPI.transactions.functionCall(
                 "withdraw_seed",
                 {
-                    seed_id: `${window.nearConfig.ADDRESS_REF_EXCHANGE}@${this.OLD_POOL_ID}`,
-                    amount: amnt,
+                    seed_id: `${window.nearConfig.ADDRESS_REF_EXCHANGE}@${poolID}`,
+                    amount: amount,
                     msg: ""
                 },
                 200_000_000_000_000,
@@ -252,35 +264,59 @@ export default class BaseLogic {
         return { user_shares, total_shares, amounts }
     }
 
-    async getNewPoolInfo(): Promise<{
-        user_shares: string
-        total_shares: string
-        amounts: string[]
-    }> {
-        const user_shares = await window.account.viewFunction(
-            window.nearConfig.ADDRESS_REF_EXCHANGE,
-            "get_pool_shares",
-            {
-                pool_id: this.NEW_POOL_ID,
-                account_id: window.account.accountId
-            }
-        )
-
-        const {
-            amounts,
-            shares_total_supply: total_shares
-        }: {
+    /**
+     * add liquity to a pool on ref-finance
+     *
+     * @param positions
+     * @returns
+     */
+    async addLiquidity(
+        positions: {
+            pool_id: number
             amounts: string[]
-            shares_total_supply: string
-        } = await window.account.viewFunction(window.nearConfig.ADDRESS_REF_EXCHANGE, "get_pool", {
-            pool_id: this.NEW_POOL_ID
-        })
+        }[]
+    ): Promise<nearAPI.transactions.Transaction[]> {
+        const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
+        const refActions: nearAPI.transactions.Action[] = []
 
-        return { user_shares, total_shares, amounts }
+        // add LP positions
+        for (let i = 0; i < positions.length; i++) {
+            // current position info
+            const { pool_id, amounts } = positions[i]
+
+            // set slippage protection to 0.1%
+            const min_lp_amounts: string[] = amounts.map(amount => {
+                return ((BigInt(amount) * BigInt("999")) / BigInt("1000")).toString()
+            })
+
+            // add liquidity to pool
+            // no need to check for storage as storage deposit
+            // is take from attached deposit for this action
+            refActions.push(
+                nearAPI.transactions.functionCall(
+                    "add_liquidity",
+                    {
+                        pool_id: pool_id,
+                        amounts: amounts,
+                        min_amounts: min_lp_amounts
+                    },
+                    100_000_000_000_000,
+                    this.LP_STORAGE_AMOUNT
+                )
+            )
+        }
+
+        preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions))
+        const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
+
+        return TXs
     }
 
     // remove liquidity from OCT<>wNEAR pool
-    async removeLiquidity(user_shares: string, min_amounts: string[]): Promise<nearAPI.transactions.Transaction[]> {
+    async removeLiquidityOctWnear(
+        user_shares: string,
+        min_amounts: string[]
+    ): Promise<nearAPI.transactions.Transaction[]> {
         const actions: nearAPI.transactions.Action[] = []
 
         // query user storage
@@ -510,92 +546,20 @@ export default class BaseLogic {
         return balance[window.nearConfig.ADDRESS_OCT] ? balance[window.nearConfig.ADDRESS_OCT] : "0"
     }
 
-    // deposit stNEAR then add liquidity to OCT<>stNEAR pool
-    async addLiquidity(amount_stnear: string, lp_amounts: string[]): Promise<nearAPI.transactions.Transaction[]> {
-        const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
-        const metapoolActions: nearAPI.transactions.Action[] = []
-        // use this to increase storage balance on ref before depositing stNEAR
-        const refActions_1: nearAPI.transactions.Action[] = []
-        // use this for actions related to LP
-        const refActions_2: nearAPI.transactions.Action[] = []
-
-        // query user storage on ref
-        const storage_balance: any = await window.account.viewFunction(
-            window.nearConfig.ADDRESS_REF_EXCHANGE,
-            "storage_balance_of",
-            {
-                account_id: window.account.accountId
-            }
-        )
-
-        // check if storage is enough for a new token deposit
-        if (storage_balance === null || BigInt(storage_balance.available) <= BigInt(this.MIN_DEPOSIT_PER_TOKEN)) {
-            refActions_1.push(
-                nearAPI.transactions.functionCall(
-                    "storage_deposit", // contract method to deposit NEAR for wNEAR
-                    {},
-                    20_000_000_000_000, // attached gas
-                    this.ONE_MORE_DEPOSIT_AMOUNT // amount of NEAR to deposit and wrap
-                )
-            )
-        }
-
-        // deposit stNEAR on ref-finance. Assumptions:
-        // 1- ref-finance contract already has storage deposit on stNEAR contract
-        // 2- stNEAR is on the ref-finance global token whitelist
-        if (BigInt(amount_stnear) > BigInt("0")) {
-            metapoolActions.push(
-                nearAPI.transactions.functionCall(
-                    "ft_transfer_call",
-                    {
-                        receiver_id: window.nearConfig.ADDRESS_REF_EXCHANGE,
-                        amount: amount_stnear,
-                        msg: ""
-                    },
-                    150_000_000_000_000,
-                    "1" // one yocto
-                )
-            )
-        }
-
-        // set slippage protection to 0.1%
-        const min_lp_amounts: string[] = lp_amounts.map(amount => {
-            return ((BigInt(amount) * BigInt("999")) / BigInt("1000")).toString()
-        })
-
-        // add liquidity to $OCT <-> $stNEAR
-        // no need to check for storage as storage deposit
-        // is take from attached deposit for this action
-        refActions_2.push(
-            nearAPI.transactions.functionCall(
-                "add_liquidity",
-                {
-                    pool_id: this.NEW_POOL_ID,
-                    amounts: lp_amounts,
-                    min_amounts: min_lp_amounts
-                },
-                100_000_000_000_000,
-                this.LP_STORAGE_AMOUNT
-            )
-        )
-
-        if (refActions_1.length > 0) {
-            preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_1))
-        }
-        if (metapoolActions.length > 0) {
-            preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_METAPOOL, metapoolActions))
-        }
-        preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions_2))
-        const TXs: nearAPI.transactions.Transaction[] = await Promise.all(preTXs)
-
-        return TXs
-    }
-
     /**
      * deposit multiple tokens on Ref.
      * Assumptions:
      * 1- ref-finance contract already has storage deposit on provided tokens
      * 2- provided tokens are on the ref-finance global whitelist
+     *
+     * !! IMPORTANT !!
+     * if you want to deposit multiple tokens at once, then:
+     * @example good: all tokens in 1 call
+     * depositTokensOnRef([{token: "dai", amount: "1"}, {token: "usdt", amount: "1"}])
+     * @example bad: separate calls miscalculate required user storage on ref-finance
+     * depositTokensOnRef([{token: "dai", amount: "1"}])
+     * depositTokensOnRef([{token: "usdt", amount: "1"}])
+     *
      *
      * @param deposits
      */
@@ -607,6 +571,34 @@ export default class BaseLogic {
             address: string
             actions: nearAPI.transactions.Action[]
         }[] = []
+        // increase user storage balance on ref before token deposits
+        const refActions: nearAPI.transactions.Action[] = []
+
+        const storage_needed: bigint = BigInt(deposits.length) * BigInt(this.MIN_DEPOSIT_PER_TOKEN)
+        // query user storage on ref
+        const storage_balance: any = await window.account.viewFunction(
+            window.nearConfig.ADDRESS_REF_EXCHANGE,
+            "storage_balance_of",
+            {
+                account_id: window.account.accountId
+            }
+        )
+
+        // check if user storage is enough for depositing n tokens
+        if (storage_balance === null || BigInt(storage_balance.available) <= storage_needed) {
+            // calculate amount to pay
+            const amountMissing: string = (storage_needed - BigInt(storage_balance.available)).toString()
+            const amountToPay: string = this.roundUpToNearest(amountMissing, this.MIN_DEPOSIT_PER_TOKEN)
+
+            refActions.push(
+                nearAPI.transactions.functionCall(
+                    "storage_deposit", // contract method to deposit NEAR for wNEAR
+                    {},
+                    20_000_000_000_000, // attached gas
+                    amountToPay // NEAR attached amount
+                )
+            )
+        }
 
         for (let i = 0; i < deposits.length; i++) {
             tokensActions.push({
@@ -626,6 +618,10 @@ export default class BaseLogic {
             })
         }
 
+        // transaction object for ref-finance storage deposit (if needed)
+        if (refActions.length >= 1) {
+            preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions))
+        }
         // transaction objects for deposits. Each token deposit is a separate transaction
         for (let i = 0; i < deposits.length; i++) {
             preTXs.push(this.makeTransaction(tokensActions[i].address, tokensActions[i].actions))
@@ -670,84 +666,6 @@ export default class BaseLogic {
         const rest: bigint = BigInt(x) % BigInt(m)
         const toAdd: bigint = rest === BigInt(0) ? BigInt(0) : BigInt(m)
         return (BigInt(x) - rest + toAdd).toString()
-    }
-
-    /**
-     * estimate & pay storage costs for actions that'll be performed
-     * on Ref-finane exchange. Supported: token deposits and LP
-     *
-     * !! IMPORTANT !!
-     * When making multiple actions on Ref-finance at once, like:
-     * deposit multiple tokens, multiple LPs or combination of both
-     * Use this method to correctly estimate needed storage before
-     * performing the actions (this transaction has to go first).
-     *
-     * @example good: deposit 2 tokens and 1 LP at once:
-     * - 1: call payRefStorage payRefStorage({ lp_positions: 1, token_deposits: 2})
-     * - 2: deposit tokens and provide LP
-     * this will correctly estimate storage for the
-     *
-     * @example !! BAD !!: separate calls miscalculate needed storage on ref-finance
-     * Situation: user has 0.1 available for storage and 1 token needs 0.1
-     * user wants to deposit 2 tokens
-     * - 1: estimate storage for 1st token then deposit:
-     * payRefStorage({ lp_positions: 0, token_deposits: 1})
-     * depositTokensOnRef([{token: "dai", amount: "1"}])
-     * => check available storage: 0.1 so enough for 1 token: correct
-     * - 2: estimate storage for 2nd token then deposit:
-     * payRefStorage({ lp_positions: 0, token_deposits: 1})
-     * depositTokensOnRef([{token: "usdt", amount: "1"}])
-     * => check available storage: 0.1 so enough for 1 token: this is wrong !!
-     * because we will be depositing 1 token before this, so we won't have enough
-     * storage for the 2nd token when the TXs actually execute
-     *
-     * @param payFor actions to cover storage for
-     * - lp_position: number of LP positions we'll create
-     * - token_deosits: number of tokens that we'll deposit
-     */
-    async payRefStorage(payFor: {
-        lp_positions: number
-        token_deposits: number
-    }): Promise<nearAPI.transactions.Transaction[]> {
-        const preTXs: Promise<nearAPI.transactions.Transaction>[] = []
-        // increase user storage balance on ref before token deposits
-        const refActions: nearAPI.transactions.Action[] = []
-
-        const storage_needed: bigint =
-            BigInt(payFor.lp_positions) * BigInt(this.LP_STORAGE_AMOUNT) +
-            BigInt(payFor.token_deposits) * BigInt(this.MIN_DEPOSIT_PER_TOKEN)
-
-        // query user storage on ref
-        const storage_balance: any = await window.account.viewFunction(
-            window.nearConfig.ADDRESS_REF_EXCHANGE,
-            "storage_balance_of",
-            {
-                account_id: window.account.accountId
-            }
-        )
-
-        // check if user storage is enough
-        if (storage_balance === null || BigInt(storage_balance.available) <= storage_needed) {
-            // calculate amount to pay
-            const amountMissing: string = (storage_needed - BigInt(storage_balance.available)).toString()
-            const amountToPay: string = this.roundUpToNearest(amountMissing, this.MIN_DEPOSIT_PER_TOKEN)
-
-            refActions.push(
-                nearAPI.transactions.functionCall(
-                    "storage_deposit", // contract method to deposit NEAR for wNEAR
-                    {},
-                    20_000_000_000_000, // attached gas
-                    amountToPay
-                )
-            )
-        }
-
-        // only construct a transaction if we actually have to pay storage
-        if (refActions.length > 0) {
-            preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_REF_EXCHANGE, refActions))
-        }
-
-        return await Promise.all(preTXs)
     }
 
     // helpers

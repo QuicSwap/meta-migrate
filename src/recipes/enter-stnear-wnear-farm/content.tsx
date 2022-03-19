@@ -74,7 +74,7 @@ export function getContent(page: number): ReactNode | null {
                                 finally the LP Shares are put into the stNEAR {"<->"} wNEAR farm. {""}
                                 <Break />
                                 <InputComponent
-                                    data={allowanceInput ?? new InputData({value: ""})}
+                                    data={allowanceInput ?? new InputData({ value: "" })}
                                     label="recipe allowance"
                                     type="number"
                                     unit="NEAR"
