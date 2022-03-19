@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ReactNode, useEffect, useState } from "react"
-import { Description, Break } from "../../components/description"
+import { Description, Break, Loading, Purple } from "../../components/description"
 import { InputData, InputComponent } from "../../components/input"
 import LocateComponent from "../../components/locate"
 import NavButtonComponent from "../../components/navbuttons"
@@ -26,7 +26,7 @@ export function getContent(page: number): ReactNode | null {
             // Define Inputs
             if (NEAR.minDepositAmount !== undefined && NEAR.nativeNEARBalance !== undefined)
                 allowanceInput ??= new InputData({
-                    value: yton(NEAR.nativeNEARBalance!, 5),
+                    value: Math.max(Number(yton(NEAR.nativeNEARBalance!, 5)) - 5, 0).toString(),
                     pattern: /^\d+(\.\d{0,24})?$/,
                     assert: [
                         {
@@ -62,7 +62,7 @@ export function getContent(page: number): ReactNode | null {
                 0
             )
             // Define Values
-            // -
+            const balance = Loading(!!NEAR?.nativeNEARBalance, NEAR.nativeNEARBalance, s => yton(s)!)
             return (
                 <>
                     <TitleComponent title="Enter stNEAR <-> wNEAR Farm" step={1} />
@@ -74,6 +74,8 @@ export function getContent(page: number): ReactNode | null {
                                 provided as liquidity in the stNEAR {"<->"} wNEAR pool and {""}
                                 finally the LP Shares are put into the stNEAR {"<->"} wNEAR farm. {""}
                                 <Break />
+                                You currently have <Purple>{balance}</Purple>&nbsp;$NEAR in your wallet.
+                                <Break />
                                 <InputComponent
                                     data={allowanceInput ?? new InputData({ value: "" })}
                                     label="recipe allowance"
@@ -84,7 +86,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         denied={allowanceInput?.data.error}
                         completed={refresh[0]}
-                        action={() => {}}
+                        action={() => {NEAR.stepOneAction(utils.format.parseNearAmount(allowanceInput.data.value)!)}}
                     />
                     <NavButtonComponent next />
                 </>
@@ -109,15 +111,51 @@ export function getContent(page: number): ReactNode | null {
             // Define Inputs
             // -
             // Define Refresh
-            // -
+            refresh[4] ??= new Refresh(
+                () =>
+                    Promise.all([
+                        NEAR.getWnearBalanceOnRef(),
+                        NEAR.getStnearBalanceOnRef(),
+                        NEAR.getStnearBalance(),
+                        NEAR.getNativeNearBalance(),
+                    ]).then(res => {
+                        NEAR.wNEARBalanceOnRef = res[0]
+                        NEAR.stNEARBalanceOnRef = res[1]
+                        NEAR.stNEARBalance = res[2]
+                        NEAR.nativeNEARBalance = res[3]
+                        return true
+                    }),
+                0
+            )
             // Define Values
-            const rows: {
-                location: string
-                link: string
-                amount?: string | undefined
-                unit: string
-                noline?: boolean | undefined
-            }[] = []
+            const rows = [
+                {
+                    location: "Ref-Finance",
+                    link: `https://app.ref.finance/account`,
+                    amount: NEAR?.wNEARBalanceOnRef,
+                    unit: "wNEAR",
+                    noline: true
+                },
+                {
+                    location: "",
+                    link: `https://app.ref.finance/account`,
+                    amount: NEAR?.stNEARBalanceOnRef,
+                    unit: "stNEAR"
+                },
+                {
+                    location: "NEAR wallet",
+                    link: `https://wallet.near.org/`,
+                    amount: NEAR?.nativeNEARBalance,
+                    unit: "NEAR",
+                    noline: true
+                },
+                {
+                    location: "",
+                    link: `https://wallet.near.org/`,
+                    amount: NEAR?.stNEARBalance,
+                    unit: "stNEAR"
+                }
+            ]
             return <LocateComponent rows={rows} />
 
         default:
@@ -129,7 +167,7 @@ export function APY() {
     const [percentage, setPercentage] = useState("...")
     useEffect(() => {
         async function getPercentage() {
-            let percentage = (await getFarmAPR())?.ref_oct_st_near_apr;
+            let percentage = (await getFarmAPR())?.ref_oct_st_near_apr
             if (isNaN(percentage) || percentage === 0) {
                 percentage = "..."
             }
@@ -137,12 +175,5 @@ export function APY() {
         }
         getPercentage()
     }, [percentage])
-    return (
-        <span>
-            { percentage !== "..."
-                ? Math.round(Number(percentage)) + "%"
-                : "..."
-            }
-        </span>
-    );
+    return <span>{percentage !== "..." ? Math.round(Number(percentage)) + "%" : "..."}</span>
 }

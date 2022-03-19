@@ -8,7 +8,7 @@ type recipe = {
     title: string
     description: string
     comingsoon?: boolean
-    apy: () =>  ReactNode | null,
+    apy: () => ReactNode | null
     content: (page: number) => ReactNode | null
     steps: string[]
 }

@@ -6,6 +6,9 @@ export default class Logic extends BaseLogic {
 
     minDepositAmount?: string
     nativeNEARBalance?: string
+    wNEARBalanceOnRef?: string
+    stNEARBalanceOnRef?: string
+    stNEARBalance?: string
 
     /**
      * take NEAR tokens, provide liquidity to wNear<>stNear, stake on farm
