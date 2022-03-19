@@ -26,7 +26,7 @@ export default class Logic extends BaseLogic {
             this.getPoolInfo(this.STNEAR_WNEAR_POOL_ID)
         ])
         // get expected amount of stNEAR user gets by staking amountToWrap
-        const estimatedStnearAmount = this.estimateStnearOut(amountToStake, st_near_price)
+        const estimatedStnearAmount = this.estimateStnearOut(amountToStake, st_near_price, 10)
         // estimate received LP shares
         const lpShares: string = this.calcLpSharesFromAmounts(total_shares, amounts, [
             estimatedStnearAmount,

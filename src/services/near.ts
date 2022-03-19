@@ -222,7 +222,7 @@ export default class BaseLogic {
     calcMinAmountsOut(user_shares: string, total_shares: string, amounts: string[]): string[] {
         return amounts.map(amount => {
             let exact_amount = (BigInt(amount) * BigInt(user_shares)) / BigInt(total_shares)
-            // add 0.01% slippage tolerance
+            // add 0.1% slippage tolerance
             return ((exact_amount * BigInt("999")) / BigInt("1000")).toString()
         })
     }
@@ -284,9 +284,9 @@ export default class BaseLogic {
             // current position info
             const { pool_id, amounts } = positions[i]
 
-            // set slippage protection to 0.1%
+            // set slippage protection to 0.5%
             const min_lp_amounts: string[] = amounts.map(amount => {
-                return ((BigInt(amount) * BigInt("999")) / BigInt("1000")).toString()
+                return ((BigInt(amount) * BigInt("995")) / BigInt("1000")).toString()
             })
 
             // add liquidity to pool
@@ -499,7 +499,7 @@ export default class BaseLogic {
         // deposit NEAR to metapool
         wNearActions.push(nearAPI.transactions.functionCall("near_deposit", {}, 50_000_000_000_000, near_amount))
 
-        preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_METAPOOL, wNearActions))
+        preTXs.push(this.makeTransaction(window.nearConfig.ADDRESS_WNEAR, wNearActions))
 
         const TXs = await Promise.all(preTXs)
         return TXs
@@ -639,10 +639,10 @@ export default class BaseLogic {
             return BigInt(prevValue) < currValue ? prevValue : currValue.toString()
         })
 
-        // set tolerance to 0.01%
+        // set tolerance to 0.3%
         // !!! important leave at least 1 LP share to occupy storage
         // see: https://github.com/ref-finance/ref-contracts/issues/36
-        lp_shares_estimate = ((BigInt(lp_shares_estimate) * BigInt("9999")) / BigInt("10000")).toString()
+        lp_shares_estimate = ((BigInt(lp_shares_estimate) * BigInt("997")) / BigInt("1000")).toString()
 
         return lp_shares_estimate
     }

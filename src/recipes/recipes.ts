@@ -17,7 +17,7 @@ const recipes: recipe[] = [
     {
         id: 0,
         title: "Enter stNEAR <-> META farm",
-        description: "Get 153% APY!",
+        description: "Soooon [̲̅$̲̅(̲̅ ͡° ͜ʖ ͡°̲̅)̲̅$̲̅]",
         comingsoon: true,
         apy: EnterStNEARMETAFarm.APY,
         content: EnterStNEARMETAFarm.getContent,
@@ -26,7 +26,7 @@ const recipes: recipe[] = [
     {
         id: 1,
         title: "Migrate wNEAR <-> OCT farm to stNEAR <-> OCT farm",
-        description: "Get 35% APY!",
+        description: "Migrate your liquidity in 3 easy steps!",
         apy: MigrateToOCTFarm.APY,
         content: MigrateToOCTFarm.getContent,
         steps: MigrateToOCTFarm.steps
@@ -34,7 +34,7 @@ const recipes: recipe[] = [
     {
         id: 2,
         title: "Enter stNEAR <-> wNEAR farm",
-        description: "Get 27% APY!",
+        description: "One click to start farming!",
         apy: EnterStNEARWNEARFarm.APY,
         content: EnterStNEARWNEARFarm.getContent,
         steps: EnterStNEARWNEARFarm.steps

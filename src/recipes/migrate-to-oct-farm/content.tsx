@@ -147,7 +147,7 @@ export function getContent(page: number): ReactNode | null {
                         }
                         completed={refresh[1]}
                         denied={stakeInput.data.error}
-                        action={() => NEAR.nearToStnear(utils.format.parseNearAmount(stakeInput.data.value)!)}
+                        action={() => NEAR.stepTwoAction(utils.format.parseNearAmount(stakeInput.data.value)!)}
                     />
                     <NavButtonComponent next back />
                 </>
@@ -275,7 +275,7 @@ export function getContent(page: number): ReactNode | null {
                                     type="number"
                                     onChange={(value: string) => {
                                         if (NEAR.newPoolInfo !== undefined && !stNEARInput.data.error) {
-                                            stNEARInput.data.unmatched = (
+                                            OCTInput.data.unmatched = (
                                                 (parseFloat(value) *
                                                     Number(
                                                         (BigInt("10000000000") *

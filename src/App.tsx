@@ -34,7 +34,7 @@ const theme = createTheme({
         primary: {
             main: "#8542eb",
             light: "#f6f2fd",
-            dark: "rgba(133,66,235,0.4392156862745098)"
+            dark: "#8542eb"
         },
         secondary: {
             main: "#4bc7ef"
@@ -189,7 +189,7 @@ export function CatalogPage() {
                             zIndex: "-1",
                             borderRadius: "12px 0 0 12px",
                             background: theme.palette.primary.main,
-                            opacity: 0.2
+                            opacity: 0.7
                         }
                     }}
                     elevation={2}

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ReactNode, useEffect, useState } from "react"
-import { Description, Break, Loading, Purple } from "../../components/description"
+import { Description, Break, Loading, Purple, Note } from "../../components/description"
 import { InputData, InputComponent } from "../../components/input"
 import LocateComponent from "../../components/locate"
 import NavButtonComponent from "../../components/navbuttons"
@@ -82,11 +82,15 @@ export function getContent(page: number): ReactNode | null {
                                     type="number"
                                     unit="NEAR"
                                 />
+                                <Break />
+                                <Note>Execution might take a while.</Note>
                             </Description>
                         }
                         denied={allowanceInput?.data.error}
                         completed={refresh[0]}
-                        action={() => {NEAR.stepOneAction(utils.format.parseNearAmount(allowanceInput.data.value)!)}}
+                        action={() => {
+                            NEAR.stepOneAction(utils.format.parseNearAmount(allowanceInput.data.value)!)
+                        }}
                     />
                     <NavButtonComponent next />
                 </>
@@ -117,7 +121,7 @@ export function getContent(page: number): ReactNode | null {
                         NEAR.getWnearBalanceOnRef(),
                         NEAR.getStnearBalanceOnRef(),
                         NEAR.getStnearBalance(),
-                        NEAR.getNativeNearBalance(),
+                        NEAR.getNativeNearBalance()
                     ]).then(res => {
                         NEAR.wNEARBalanceOnRef = res[0]
                         NEAR.stNEARBalanceOnRef = res[1]

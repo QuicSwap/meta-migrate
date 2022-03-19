@@ -27,6 +27,12 @@ export default class Logic extends BaseLogic {
     nativeNEARBalance?: string
     lpSharesToStake?: string
 
+    stepTwoAction(amount: string): void {
+        this.passToWallet([
+            this.nearToStnear(amount)
+        ])
+    }
+
     getOldFarmingStake(): Promise<string> {
         return this.getFarmingStake(this.OLD_POOL_ID)
     }
